@@ -1,0 +1,4 @@
+import Link from "next/link";
+import Image from "next/image";
+export const publicLinks=[["/institucion","Institución"],["/vida-escolar","Vida escolar"],["/trayectoria","Trayectoria"],["/contacto","Contacto y ubicación"]];
+export function PublicNav(){return <header className="institution-nav"><Link href="/" className="flex items-center gap-3 font-semibold"><Image src="/colegio/iberdrola_escudo.jpg" width={72} height={72} alt="Escudo Iberdrola A" className="h-[72px] w-[72px] object-contain"/><span>Iberdrola A<small className="block font-normal">Unidad Educativa</small></span></Link><nav aria-label="Navegación institucional" className="flex flex-wrap items-center gap-5">{publicLinks.map(([href,label])=><Link key={href} href={href}>{label}</Link>)}<Link className="portal-button" href="/login">Iniciar sesión</Link></nav></header>}
