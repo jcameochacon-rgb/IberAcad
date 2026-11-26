@@ -11,7 +11,7 @@ import type { Database } from "@iberdrola/shared";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { validEmail } from "@/lib/auth-validation";
-import { siteOriginForRequest } from "@/lib/request-origin";
+import { siteOrigin } from "@/lib/env";
 
 function personValues(form: FormData) {
   const ci = String(form.get("ci") || "").trim();
@@ -209,6 +209,58 @@ async function rollbackCreatedAccount(
   return true;
 }
 
+async function validateNewFicha(
+  supabase: DbClient,
+  rol: Role,
+  form: FormData,
+  newPerson: ReturnType<typeof personValues>,
+): Promise<string | null> {
+  const validation = validatePerson(newPerson);
+  if (validation) return validation;
+  const rude = String(form.get("rude") || "").trim();
+  const gender = String(form.get("genero") || "").trim();
+  const birthDate = String(form.get("fecha_nacimiento") || "").trim();
+  const specialty = String(form.get("especialidad") || "").trim();
+  if (rol === "ESTUDIANTE") {
+    if (rude.length > 40) return "El RUDE admite hasta 40 caracteres.";
+    if (gender && !["M", "F", "NO_ESPECIFICADO"].includes(gender))
+      return "Selecciona un género válido.";
+    if (
+      birthDate &&
+      (!validDate(birthDate) ||
+        birthDate < "1900-01-01" ||
+        birthDate > localToday())
+    )
+      return "La fecha de nacimiento debe ser válida y no futura.";
+  }
+  if (rol === "DOCENTE" && specialty.length > 200)
+    return "La especialidad admite hasta 200 caracteres.";
+
+  // Comprobar duplicados antes de emitir un correo que luego quedaría sin ficha.
+  if (newPerson.ci) {
+    const existing = await supabase
+      .from("personas")
+      .select("id")
+      .eq("ci", newPerson.ci)
+      .maybeSingle();
+    if (existing.error) return "No se pudo comprobar el CI. Reintenta.";
+    if (existing.data)
+      return "El CI ya tiene una ficha. Selecciona la persona existente al crear el acceso.";
+  }
+  if (rol === "ESTUDIANTE" && rude) {
+    const existing = await supabase
+      .from("estudiantes")
+      .select("id")
+      .eq("rude", rude)
+      .maybeSingle();
+    if (existing.error) return "No se pudo comprobar el RUDE. Reintenta.";
+    if (existing.data)
+      return "El RUDE ya está registrado. Revisa la ficha antes de crear otro acceso.";
+  }
+
+  return null;
+}
+
 export async function accountAction(_: string, form: FormData) {
   const { supabase, profile, user } = await requireProfile();
   if (!canManage(profile.rol)) return "Sin permiso.";
@@ -217,9 +269,18 @@ export async function accountAction(_: string, form: FormData) {
   const id = String(form.get("id") || "");
   const rol = String(form.get("rol") || "");
   const persona = String(form.get("persona") || "");
-  if (!["create", "update", "delete", "update_person"].includes(op))
+  if (
+    !["create", "update", "delete", "update_person", "invite_again"].includes(
+      op,
+    )
+  )
     return "Operación inválida.";
-  if (op !== "delete" && op !== "update_person" && !isRole(rol))
+  if (
+    op !== "delete" &&
+    op !== "update_person" &&
+    op !== "invite_again" &&
+    !isRole(rol)
+  )
     return "Selecciona un rol válido.";
   if (profile.rol === "SECRETARIA" && ["DIRECTOR", "SECRETARIA"].includes(rol))
     return "Secretaría solo gestiona cuentas de docentes, estudiantes y familias.";
@@ -271,6 +332,37 @@ export async function accountAction(_: string, form: FormData) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SECRET_KEY;
+  if (op === "invite_again") {
+    const origin = siteOrigin();
+    if (!url || !secret || !origin?.startsWith("https://"))
+      return "Configura el servidor de correo y la URL pública antes de reenviar invitaciones.";
+    const target = await supabase
+      .from("perfiles")
+      .select("id,rol")
+      .eq("id", id)
+      .maybeSingle();
+    if (target.error || !target.data) return "No se pudo verificar la cuenta.";
+    if (
+      profile.rol === "SECRETARIA" &&
+      ["DIRECTOR", "SECRETARIA"].includes(target.data.rol)
+    )
+      return "Cuenta protegida.";
+    const admin = createClient<Database>(url, secret, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const account = await admin.auth.admin.getUserById(id);
+    if (account.error || !account.data.user.email)
+      return "No se pudo consultar el correo de la cuenta.";
+    if (account.data.user.email_confirmed_at)
+      return "La cuenta ya fue activada. Su titular puede usar Recuperar contraseña en el inicio de sesión.";
+    const result = await admin.auth.admin.inviteUserByEmail(
+      account.data.user.email,
+      { redirectTo: `${origin}/auth/invitacion` },
+    );
+    return result.error
+      ? "No se pudo reenviar. Comprueba SMTP y espera si se alcanzó el límite de correos."
+      : "Invitación reenviada al correo de la cuenta.";
+  }
   const validatePersonForRole = async (role: string, personaId: string) => {
     if (role === "DOCENTE") {
       const { data, error } = await supabase
@@ -307,42 +399,52 @@ export async function accountAction(_: string, form: FormData) {
     return null;
   };
   if (op === "create") {
+    if (form.get("solo_ficha") === "on") {
+      if (
+        !isRole(rol) ||
+        !["ESTUDIANTE", "DOCENTE", "PADRE"].includes(rol) ||
+        form.get("persona_nueva") !== "on"
+      )
+        return "El registro sin cuenta solo está disponible para una nueva ficha de estudiante, docente o tutor.";
+      const person = personValues(form);
+      const validation = await validateNewFicha(supabase, rol, form, person);
+      if (validation) return validation;
+      const created = await createPersonAndFicha(supabase, rol, form, person);
+      if ("error" in created) {
+        if (created.fichaId) {
+          revalidatePath("/panel", "layout");
+          return "La ficha fue creada. Revísala en Consultar antes de volver a registrar; no se creó una cuenta ni se envió correo.";
+        }
+        return created.error;
+      }
+      revalidatePath("/panel", "layout");
+      return (
+        "Ficha registrada correctamente, sin cuenta ni envío de correo. " +
+        (rol === "ESTUDIANTE"
+          ? "Ya puedes matricular al estudiante desde Registro de estudiante → Editar."
+          : rol === "DOCENTE"
+            ? "Ya puedes asignarle materias y cursos desde Gestión de docente → Editar."
+            : "Ya puedes vincular al tutor desde la ficha del estudiante.")
+      );
+    }
     if (!url || !secret)
       return "Configura SUPABASE_SECRET_KEY solo en el servidor para invitar cuentas.";
+    const origin = siteOrigin();
+    if (!origin?.startsWith("https://"))
+      return "Primero publica IberAcad y configura NEXT_PUBLIC_SITE_URL con su dirección HTTPS. Una invitación a localhost no funciona en el celular.";
     const email = String(form.get("email") || "").trim();
     if (!validEmail(email)) return "Correo inválido.";
     const admin = createClient<Database>(url, secret, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const origin = await siteOriginForRequest();
     if (form.get("persona_nueva") === "on") {
       if (!isRole(rol)) return "Selecciona un rol válido.";
       const newPerson = personValues(form);
-      const validation = validatePerson(newPerson);
+      const validation = await validateNewFicha(supabase, rol, form, newPerson);
       if (validation) return validation;
-      const rude = String(form.get("rude") || "").trim();
-      const gender = String(form.get("genero") || "").trim();
-      const birthDate = String(form.get("fecha_nacimiento") || "").trim();
-      const specialty = String(form.get("especialidad") || "").trim();
-      if (rol === "ESTUDIANTE") {
-        if (rude.length > 40) return "El RUDE admite hasta 40 caracteres.";
-        if (gender && !["M", "F", "NO_ESPECIFICADO"].includes(gender))
-          return "Selecciona un género válido.";
-        if (
-          birthDate &&
-          (!validDate(birthDate) ||
-            birthDate < "1900-01-01" ||
-            birthDate > localToday())
-        )
-          return "La fecha de nacimiento debe ser válida y no futura.";
-      }
-      if (rol === "DOCENTE" && specialty.length > 200)
-        return "La especialidad admite hasta 200 caracteres.";
 
       const invited = await admin.auth.admin.inviteUserByEmail(email, {
-        redirectTo: origin
-          ? `${origin}/auth/callback?next=/actualizar-clave`
-          : undefined,
+        redirectTo: `${origin}/auth/invitacion`,
       });
       if (invited.error || !invited.data.user)
         return "No se pudo invitar: verifica que la cuenta no exista y la configuración de correo.";
@@ -383,16 +485,32 @@ export async function accountAction(_: string, form: FormData) {
           : "No se pudo vincular la cuenta y la ficha quedó parcialmente creada; verifica Auth antes de reintentar.";
       }
       revalidatePath("/panel", "layout");
-      return "Cuenta y ficha creadas. Se envió una invitación para configurar la contraseña.";
+      return (
+        "Cuenta y ficha creadas. Se solicitó el envío de la invitación. " +
+        (rol === "ESTUDIANTE"
+          ? "Ahora matricula al estudiante desde su ficha en Registro de estudiante → Editar."
+          : rol === "DOCENTE"
+            ? "Ahora asigna materias y cursos desde Gestión de docente → Editar."
+            : rol === "PADRE"
+              ? "Vincula al tutor con sus estudiantes y autoriza la consulta desde la ficha del estudiante."
+              : "Revisa el correo y la carpeta de spam para configurar la contraseña.")
+      );
     }
 
     if (!uuidPattern.test(persona)) return "Selecciona una persona.";
+    const alreadyLinked = await supabase
+      .from("perfiles")
+      .select("id")
+      .eq("persona_id", persona)
+      .maybeSingle();
+    if (alreadyLinked.error)
+      return "No se pudo comprobar el vínculo existente.";
+    if (alreadyLinked.data)
+      return "Esta persona ya tiene una cuenta. Utiliza Editar para revisarla.";
     const compatibilityError = await validatePersonForRole(rol, persona);
     if (compatibilityError) return compatibilityError;
     const invited = await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: origin
-        ? `${origin}/auth/callback?next=/actualizar-clave`
-        : undefined,
+      redirectTo: `${origin}/auth/invitacion`,
     });
     if (invited.error || !invited.data.user)
       return "No se pudo invitar: verifica que la cuenta no exista y la configuración de correo.";

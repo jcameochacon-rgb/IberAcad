@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   BackHandler,
   Linking,
   Pressable,
@@ -9,10 +8,15 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import PlatformWebView, {
   type PlatformWebViewHandle,
 } from "./src/components/PlatformWebView";
+
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
+import { File, Paths } from "expo-file-system";
+import { parseReportMessage, reportHtml, reportCsv } from "./src/report-export";
 
 type WebConfig = { url: string; error: null } | { url: null; error: string };
 
@@ -56,11 +60,22 @@ function readWebConfig(): WebConfig {
 const config = readWebConfig();
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <MobileApp />
+    </SafeAreaProvider>
+  );
+}
+
+function MobileApp() {
   const webView = useRef<PlatformWebViewHandle>(null);
+  const currentUrl = useRef(config.url || "");
   const [canGoBack, setCanGoBack] = useState(false);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [loadError, setLoadError] = useState(false);
+  const exportBusy = useRef(false);
+  const [exporting, setExporting] = useState(false);
   const [linkError, setLinkError] = useState("");
   const webOrigin = useMemo(
     () => (config.url ? new URL(config.url).origin : ""),
@@ -88,8 +103,12 @@ export default function App() {
   }, []);
 
   const shouldStartRequest = useCallback(
-    (request: { url: string; isTopFrame: boolean }) => {
-      if (!request.isTopFrame) return true;
+    (request: { url: string; isTopFrame?: boolean }) => {
+      // Los iframes del CAPTCHA y del mapa no deben abrir el navegador externo.
+      if (request.isTopFrame === false)
+        return (
+          request.url === "about:blank" || request.url.startsWith("https://")
+        );
 
       try {
         const target = new URL(request.url);
@@ -107,6 +126,59 @@ export default function App() {
       return false;
     },
     [openExternal, webOrigin],
+  );
+
+  const exportReport = useCallback(
+    async (url: string, raw: string) => {
+      if (exportBusy.current) return;
+      let temporary: File | null = null;
+      try {
+        if (new URL(url).origin !== webOrigin) return;
+        const report = parseReportMessage(raw);
+        if (!report) {
+          setLinkError("No se pudo interpretar el informe.");
+          return;
+        }
+        exportBusy.current = true;
+        setExporting(true);
+        if (!(await Sharing.isAvailableAsync()))
+          throw new Error("No disponible");
+        if (report.type === "iberacad.report.pdf") {
+          const result = await Print.printToFileAsync({
+            html: reportHtml(report),
+            width: 842,
+            height: 595,
+          });
+          temporary = new File(result.uri);
+          await Sharing.shareAsync(result.uri, {
+            mimeType: "application/pdf",
+            UTI: "com.adobe.pdf",
+            dialogTitle: "Guardar o compartir informe",
+          });
+        } else {
+          temporary = new File(Paths.cache, `IberAcad-${Date.now()}.csv`);
+          temporary.write(reportCsv(report));
+          await Sharing.shareAsync(temporary.uri, {
+            mimeType: "text/csv",
+            UTI: "public.comma-separated-values-text",
+            dialogTitle: "Guardar o compartir CSV",
+          });
+        }
+      } catch {
+        setLinkError(
+          "No se pudo exportar. Reintenta o abre el informe desde el navegador.",
+        );
+      } finally {
+        try {
+          if (temporary?.exists) temporary.delete();
+        } catch {
+          /* El sistema limpia la caché. */
+        }
+        exportBusy.current = false;
+        setExporting(false);
+      }
+    },
+    [webOrigin],
   );
 
   useEffect(() => {
@@ -159,10 +231,34 @@ export default function App() {
             key={config.url}
             ref={webView}
             source={{ uri: config.url }}
-            originWhitelist={["*"]}
+            originWhitelist={[
+              "https://*",
+              "http://localhost:*",
+              "http://127.0.0.1:*",
+              "http://10.0.2.2:*",
+              "about:blank",
+              "mailto:*",
+              "tel:*",
+            ]}
+            onMessage={({ nativeEvent }) =>
+              void exportReport(nativeEvent.url, nativeEvent.data)
+            }
+            onHttpError={({ nativeEvent }) => {
+              if (
+                nativeEvent.url === currentUrl.current &&
+                nativeEvent.statusCode >= 400
+              ) {
+                setLoading(false);
+                setLoadError(true);
+              }
+            }}
             onShouldStartLoadWithRequest={shouldStartRequest}
-            onNavigationStateChange={(state) => setCanGoBack(state.canGoBack)}
-            onLoadStart={() => {
+            onNavigationStateChange={(state) => {
+              currentUrl.current = state.url;
+              setCanGoBack(state.canGoBack);
+            }}
+            onLoadStart={({ nativeEvent }) => {
+              currentUrl.current = nativeEvent.url;
               setLoading(true);
               setLoadError(false);
               setProgress(0);
@@ -211,6 +307,11 @@ export default function App() {
             </View>
           ) : null}
         </View>
+        {exporting && (
+          <View accessibilityLiveRegion="polite" style={styles.toolbar}>
+            <Text style={styles.body}>Preparando informe…</Text>
+          </View>
+        )}
         {linkError ? (
           <Pressable
             accessibilityRole="button"

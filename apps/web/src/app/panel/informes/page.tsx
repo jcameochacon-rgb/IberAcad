@@ -1,3 +1,4 @@
+import { PrintReport } from "@/components/print-report";
 import { CrudHeading } from "@/components/crud-heading";
 import { readAction, allowedActions } from "@/lib/workspace-navigation";
 import { notFound } from "next/navigation";
@@ -144,9 +145,10 @@ export default async function ReportsPage({
       {result?.report && (
         <Card className="min-w-0 p-5">
           <div className="mb-6 flex flex-wrap gap-3">
-            <Button asChild variant="outline">
-              <a href={`/panel/informes/csv?${params}`}>Descargar CSV</a>
-            </Button>
+            <PrintReport
+              report={result.report}
+              csvHref={`/panel/informes/csv?${params}`}
+            />
             <Button asChild>
               <Link href={`/panel/informes/imprimir?${params}`}>
                 Preparar impresión / PDF
@@ -155,9 +157,9 @@ export default async function ReportsPage({
           </div>
           <ReportTable report={result.report} />
           <p className="mt-5 text-xs leading-6 text-muted-foreground">
-            La descarga y la impresión vuelven a consultar los datos; pueden
-            reflejar publicaciones o retiros posteriores a esta vista. Se
-            exportan todas las filas del informe, hasta 5000, sin truncarlas.
+            En el navegador, el CSV vuelve a consultar los datos. En la app se
+            exporta la vista cargada; actualízala antes si hubo cambios. Se
+            exportan todas las filas del informe, hasta 5000.
           </p>
         </Card>
       )}

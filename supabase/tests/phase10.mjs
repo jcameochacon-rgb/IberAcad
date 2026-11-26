@@ -69,5 +69,29 @@ try{
  await check('secretaría puede desactivar docente y restaurarlo',()=>role(U.secretaria,async()=>{await q(`select public.administrar_cuenta('${U.docente}',null,'DOCENTE',false,false)`);assert.equal((await scalar(`select activo from public.perfiles where id='${U.docente}'`)).activo,false);await q(`select public.administrar_cuenta('${U.docente}',null,'DOCENTE',true,false)`);}));
  await check('reportes guardados aislados por propietario',async()=>{await role(U.secretaria,()=>q(`insert into public.reportes_guardados(propietario_id,nombre,parametros) values('${U.secretaria}','Prueba','tipo=asistencia')`));await role(U.docente,async()=>assert.equal(await count('reportes_guardados'),0));await role(U.secretaria,async()=>assert.equal(await count('reportes_guardados'),1));});
  await check('secretaría elimina borrador de calificación',()=>role(U.secretaria,async()=>{await q(`select public.eliminar_registro_academico('calificaciones','${N[0]}')`);assert.equal(Number((await scalar(`select count(*) n from public.calificaciones_trimestrales where id='${N[0]}'`)).n),0);}));
+
+ await check('estudiante ve únicamente su propia ficha',()=>role(U.estudiante,async()=>{assert.equal(await count('estudiantes'),1);assert.equal((await scalar('select id from public.estudiantes')).id,E[0]);}));
+ await check('familia ve únicamente sus estudiantes vinculados',()=>role(U.padre,async()=>{const rows=(await db.query('select id from public.estudiantes order by id')).rows;assert.deepEqual(rows.map(r=>r.id),[E[0],E[2]]);}));
+ await check('docente ve alumnos de sus cursos',()=>role(U.docente,async()=>{assert.equal(await count('estudiantes'),2);}));
+ await check('estudiante no puede matricular ni asignar docentes',()=>role(U.estudiante,async()=>{
+   await reject(`select public.guardar_matricula_academica(null,'${E[0]}','${C.primero}','2026-02-01',null,'ACTIVA',null)`,/Solo Dirección/);
+   await reject(`select public.guardar_asignacion_academica(null,'${D[0]}','${C.primero}','${materias[0].id}',true,null)`,/Solo Dirección/);
+ }));
+ await check('secretaría matricula, impide duplicados y controla versiones',async()=>{
+   await q(`insert into public.personas(id,nombres) values('${uid(1020)}','Estudiante prueba matrícula');insert into public.estudiantes(id,persona_id) values('${uid(220)}','${uid(1020)}');`);
+   await role(U.secretaria,async()=>{
+     const matricula=(await scalar(`select public.guardar_matricula_academica(null,'${uid(220)}','${C.primero}','2026-02-02',null,'ACTIVA',null) id`)).id;
+     await reject(`select public.guardar_matricula_academica(null,'${uid(220)}','${C.segundo}','2026-02-02',null,'ACTIVA',null)`);
+     await reject(`select public.guardar_matricula_academica('${matricula}','${uid(220)}','${C.primero}','2026-02-02',null,'ACTIVA','2000-01-01')`,/Otra persona modificó/);
+     const version=(await scalar(`select updated_at::text v from public.matriculas where id='${matricula}'`)).v;
+     await q(`select public.guardar_matricula_academica('${matricula}','${uid(220)}','${C.primero}','2026-02-02','2026-03-01','RETIRADA','${version}')`);
+     assert.equal((await scalar(`select estado from public.matriculas where id='${matricula}'`)).estado,'RETIRADA');
+   });
+ });
+ await check('secretaría asigna un docente sin duplicar materia y curso',()=>role(U.secretaria,async()=>{
+   const assigned=(await scalar(`select public.guardar_asignacion_academica(null,'${D[0]}','${C.segundo}','${materias[0].id}',true,null) id`)).id;
+   assert.ok(assigned);
+   await reject(`select public.guardar_asignacion_academica(null,'${D[1]}','${C.segundo}','${materias[0].id}',true,null)`);
+ }));
  console.log(`${passed} pruebas de actualización correctas`);
 }finally{await db.close();}

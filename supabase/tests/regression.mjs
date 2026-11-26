@@ -1,3 +1,4 @@
+// HISTÓRICO: suite de fase 0.9, anterior a la retirada de comunicados. Usar npm run test:db para el esquema vigente.
 /** Pruebas en PostgreSQL embebido PGlite. No conectan a cuentas/proyectos remotos. */
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync,readdirSync } from 'node:fs';

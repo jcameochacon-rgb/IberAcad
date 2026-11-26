@@ -45,8 +45,16 @@ export const sections: { id: WorkspaceModule; children: WorkspaceModule[] }[] =
         "personal",
       ],
     },
-    { id: "cursos", children: ["cursos", "asignaciones", "matriculas"] },
-    { id: "asignaturas", children: ["asignaturas", "horarios"] },
+    {
+      id: "asignaturas",
+      children: [
+        "asignaturas",
+        "horarios",
+        "cursos",
+        "asignaciones",
+        "matriculas",
+      ],
+    },
     { id: "asistencia", children: ["asistencia"] },
     { id: "calificaciones", children: ["calificaciones"] },
     { id: "informes", children: ["informes"] },
@@ -54,7 +62,6 @@ export const sections: { id: WorkspaceModule; children: WorkspaceModule[] }[] =
 export function allowedActions(role: Role, module: WorkspaceModule): Action[] {
   const admin = role === "DIRECTOR" || role === "SECRETARIA";
   if (admin) {
-    if (module === "usuarios") return ["consultar"];
     if (module === "personal" && role !== "DIRECTOR") return [];
     return module === "informes"
       ? ["generar", "consultar", "editar", "eliminar"]
@@ -87,8 +94,6 @@ export function actionLabel(module: WorkspaceModule, action: Action) {
     eliminar: "Eliminar",
     generar: "Generar",
   }[action];
-  if (module === "usuarios")
-    return action === "consultar" ? "Buscar usuarios" : "Crear usuario";
   if (module === "informes")
     return {
       generar: "Generar informe/reporte",

@@ -1,3 +1,5 @@
+import { EnrolmentPanel } from "@/components/enrolment-panel";
+import { TeacherAssignmentPanel } from "@/components/teacher-assignment-panel";
 import { CrudHeading } from "@/components/crud-heading";
 import { readAction } from "@/lib/workspace-navigation";
 import { OperationForm } from "@/components/operation-form";
@@ -562,7 +564,7 @@ export default async function ManagementPage({
             section={seccion}
             defaults={defaults}
             fields={fields}
-            cancelHref={base}
+            cancelHref={`${base}?accion=${mode}`}
             submitLabel={id ? "Guardar cambios" : "Registrar"}
           />
           <p className="mt-5 text-xs leading-6 text-muted-foreground">
@@ -687,38 +689,15 @@ export default async function ManagementPage({
               </p>
             )}
           </Card>
-          <Card className="p-5 sm:p-7">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold">Matrículas</h2>
-            </div>
-            <ul className="mt-5 space-y-3">
-              {relations.enrolments.map((m) => (
-                <li
-                  key={m.id}
-                  className="rounded-lg border border-border p-3 text-sm"
-                >
-                  <p className="font-medium">
-                    {m.cursos
-                      ? `${m.cursos.grado_id}° ${m.cursos.paralelo}`
-                      : "Curso"}{" "}
-                    · {m.cursos?.gestiones?.anio}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {m.estado} · Ingreso {m.fecha_ingreso}
-                    {m.fecha_salida ? ` · Salida ${m.fecha_salida}` : ""}
-                  </p>
-                  <span>Editar matrícula</span>
-                </li>
-              ))}
-            </ul>
-            {!relations.enrolments.length && (
-              <p className="mt-5 text-sm text-muted-foreground">
-                Aún no tiene matrículas.
-              </p>
-            )}
+          <Card className="min-w-0 p-5 sm:p-7">
+            <EnrolmentPanel studentId={id} />
           </Card>
         </div>
       )}
+      {id &&
+        seccion === "docentes" &&
+        mode === "editar" &&
+        defaults.activo === "on" && <TeacherAssignmentPanel teacherId={id} />}
       {id && mode === "eliminar" && (
         <OperationForm action={deleteRecord} label="Eliminar registro" danger>
           <h2 className="text-lg font-semibold">

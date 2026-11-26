@@ -1,6 +1,6 @@
 {
   "name": "iberdrola-a",
-  "version": "0.11.0",
+  "version": "0.12.1",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -23,7 +23,7 @@
     "test": "npm run test:db && npm run test:web",
     "test:e2e": "playwright test",
     "format": "prettier --write apps/web/src apps/mobile packages/shared/src scripts tests playwright.config.ts",
-    "test:db:legacy": "node supabase/tests/regression.mjs"
+    "mobile:export": "npm run export:android --workspace @iberdrola/mobile"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

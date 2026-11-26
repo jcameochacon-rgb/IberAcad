@@ -83,7 +83,7 @@ test("login con sesión simulada abre un dashboard vacío y logout cierra el acc
   await login(page);
   await expect(page).toHaveURL(/\/panel$/);
   await expect(
-    page.getByRole("heading", { name: "Tu escuela, en perspectiva." }),
+    page.getByRole("heading", { name: "Visión institucional" }),
   ).toBeVisible();
   await expect(
     page.getByText("Dirección ficticia Prueba", { exact: true }),

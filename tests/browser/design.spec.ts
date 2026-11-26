@@ -27,16 +27,11 @@ test("diseño: portada, login y panel adaptables con movimiento reducido", async
   }
 });
 
-test("diseño: las secciones aparecen al desplazarse y los enlaces siguen funcionando", async ({
-  page,
-}) => {
-  await page.goto("/");
-  const gallery = page.locator("#galeria");
-  await gallery.scrollIntoViewIfNeeded();
-  await expect(gallery).toHaveCSS("opacity", "1");
-  await expect(gallery.getByRole("link")).toHaveCount(3);
-  await page.locator("#contacto").scrollIntoViewIfNeeded();
-  await expect(page.locator("#contacto")).toHaveCSS("opacity", "1");
-  await page.getByRole("link", { name: "Ingresar con mi cuenta" }).click();
-  await expect(page).toHaveURL(/\/login$/);
+test("diseño: galería y contacto usan páginas propias", async ({ page }) => {
+  await page.goto("/vida-escolar");
+  await expect(page.locator("#galeria")).toBeVisible();
+  await expect(page.locator("#galeria img").first()).toBeVisible();
+  await page.goto("/contacto");
+  await expect(page.locator("#contacto")).toBeVisible();
+  await expect(page.locator("iframe")).toHaveAttribute("loading", "lazy");
 });

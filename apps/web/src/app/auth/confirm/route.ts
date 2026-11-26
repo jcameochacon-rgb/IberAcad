@@ -17,7 +17,9 @@ export async function GET(request: NextRequest) {
     if (!error)
       return NextResponse.redirect(
         new URL(
-          safeDestination(request.nextUrl.searchParams.get("next")),
+          safeDestination(
+            request.nextUrl.searchParams.get("next") || "/actualizar-clave",
+          ),
           request.url,
         ),
         { headers: { "Cache-Control": "private, no-store" } },

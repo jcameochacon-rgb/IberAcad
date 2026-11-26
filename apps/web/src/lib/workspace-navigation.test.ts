@@ -8,7 +8,7 @@ import {
   type WorkspaceModule,
 } from "./workspace-navigation";
 describe("navegación por rol", () => {
-  it("incluye gestión de cursos en su propio grupo desplegable", () => {
+  it("conserva los ocho módulos y agrupa la gestión en cinco acordeones", () => {
     expect(Object.values(titles)).toEqual([
       "Gestión de usuarios",
       "Registro de estudiante",
@@ -25,13 +25,21 @@ describe("navegación por rol", () => {
       "Gestión de calificaciones",
       "Informes y reportes",
     ]);
-    expect(sections).toHaveLength(6);
-    expect(sections.flatMap((s) => s.children)).toEqual(Object.keys(titles));
+    expect(sections).toHaveLength(5);
+    expect(sections.flatMap((s) => s.children).sort()).toEqual(
+      Object.keys(titles).sort(),
+    );
     expect(
-      sections.find((section) => section.id === "cursos")?.children,
-    ).toEqual(["cursos", "asignaciones", "matriculas"]);
-    expect(allowedActions("DIRECTOR", "usuarios")).toEqual(["consultar"]);
-    expect(allowedActions("SECRETARIA", "usuarios")).toEqual(["consultar"]);
+      sections.find((section) => section.id === "asignaturas")?.children,
+    ).toEqual([
+      "asignaturas",
+      "horarios",
+      "cursos",
+      "asignaciones",
+      "matriculas",
+    ]);
+    expect(allowedActions("DIRECTOR", "usuarios")).toHaveLength(4);
+    expect(allowedActions("SECRETARIA", "usuarios")).toHaveLength(4);
     expect(allowedActions("SECRETARIA", "personal")).toEqual([]);
     expect(allowedActions("DIRECTOR", "personal")).toEqual([
       "registrar",
@@ -44,13 +52,11 @@ describe("navegación por rol", () => {
     for (const m of Object.keys(titles) as WorkspaceModule[])
       for (const r of ["DIRECTOR", "SECRETARIA"] as const)
         expect(allowedActions(r, m)).toEqual(
-          m === "usuarios"
-            ? ["consultar"]
-            : m === "personal" && r === "SECRETARIA"
-              ? []
-              : m === "informes"
-                ? ["generar", "consultar", "editar", "eliminar"]
-                : ["registrar", "consultar", "editar", "eliminar"],
+          m === "personal" && r === "SECRETARIA"
+            ? []
+            : m === "informes"
+              ? ["generar", "consultar", "editar", "eliminar"]
+              : ["registrar", "consultar", "editar", "eliminar"],
         );
   });
   it("limita docentes a sus operaciones autorizadas", () => {
@@ -91,7 +97,7 @@ describe("navegación por rol", () => {
       const links = allowedActions("DIRECTOR", m).map((a) =>
         workspaceHref("DIRECTOR", m, a),
       );
-      expect(new Set(links).size).toBe(m === "usuarios" ? 1 : 4);
+      expect(new Set(links).size).toBe(4);
       for (const link of links) {
         const [path, query] = link.split("?");
         expect(moduleAt(path, new URLSearchParams(query).get("modulo"))).toBe(

@@ -2,8 +2,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireIdentity } from "@/lib/auth";
-import { getSupabaseConfig } from "@/lib/env";
-import { siteOriginForRequest } from "@/lib/request-origin";
+import { getSupabaseConfig, siteOrigin } from "@/lib/env";
 import {
   validEmail,
   validPassword,
@@ -74,7 +73,7 @@ export async function recoverPassword(
   if (!getSupabaseConfig())
     return { error: "Primero configura la conexión del proyecto." };
   const email = String(form.get("email") || "").trim();
-  const origin = await siteOriginForRequest();
+  const origin = siteOrigin();
   if (!validEmail(email)) return { error: "Ingresa un correo válido." };
   if (!origin)
     return {
