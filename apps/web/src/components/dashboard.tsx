@@ -1,38 +1,22 @@
+import Link from "next/link";
 import {
-  GraduationCap,
+  Users,
   BookOpen,
   ClipboardCheck,
   ChartNoAxesCombined,
+  ArrowRight,
+  CalendarDays,
+  ArrowUpRight,
+  ShieldCheck,
 } from "lucide-react";
-import { PanelShell } from "./panel-shell";
-import { RecordsTable } from "./records-table";
-import { Card } from "./ui/card";
+import { PanelShell } from "@/components/panel-shell";
+import { panelHref } from "@/lib/navigation";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { RecordsTable } from "@/components/records-table";
+import { roleScope, type Module } from "@iberdrola/shared";
 import type { PanelModel } from "@/lib/data/model";
-const copy = {
-  DIRECTOR: [
-    "Visión institucional",
-    "Supervisa la gestión académica y administra las cuentas de la comunidad.",
-  ],
-  SECRETARIA: [
-    "Gestión del día",
-    "Organiza estudiantes, docentes, horarios y el seguimiento académico.",
-  ],
-  DOCENTE: [
-    "Tus aulas, al día",
-    "Revisa los resultados, la asistencia y el horario de tus cursos.",
-  ],
-  PADRE: [
-    "Acompaña cada paso",
-    "Consulta los resultados y la asistencia de tus hijos vinculados. Cada registro indica a qué estudiante pertenece.",
-  ],
-  ESTUDIANTE: [
-    "Tu avance académico",
-    "Revisa tus calificaciones, tu asistencia y las materias de tu horario.",
-  ],
-};
 export function Dashboard({ model }: { model: PanelModel }) {
-  const [title, body] = copy[model.role];
-  const family = model.role === "PADRE" || model.role === "ESTUDIANTE";
   const stats = [
     {
       label:
@@ -40,86 +24,204 @@ export function Dashboard({ model }: { model: PanelModel }) {
           ? "Hijos vinculados"
           : model.role === "ESTUDIANTE"
             ? "Ficha personal"
-            : "Estudiantes visibles",
+            : "Estudiantes registrados",
       value: model.studentCount,
-      Icon: GraduationCap,
+      icon: Users,
+      detail: "Fichas activas visibles",
+      color: "bg-blue-100 text-blue-800",
     },
     {
-      label: "Calificaciones publicadas",
-      value: model.publishedGrades,
-      Icon: ChartNoAxesCombined,
-    },
-    {
-      label: "Registros de asistencia",
-      value: model.attendanceCount,
-      Icon: ClipboardCheck,
-    },
-    {
-      label: family ? "Cursos vinculados" : "Cursos visibles",
+      label: "Cursos disponibles",
       value: model.courseCount,
-      Icon: BookOpen,
+      icon: BookOpen,
+      detail: "En la gestión seleccionada",
+      color: "bg-blue-50 text-blue-700",
+    },
+    {
+      label: "Notas publicadas",
+      value: model.publishedGrades,
+      icon: ChartNoAxesCombined,
+      detail: "Calificaciones trimestrales",
+      color: "bg-violet-50 text-violet-700",
+    },
+    {
+      label: "Marcas de asistencia",
+      value: model.attendanceCount,
+      icon: ClipboardCheck,
+      detail: "Registros visibles en la gestión",
+      color: "bg-amber-50 text-amber-700",
     },
   ];
   return (
     <PanelShell model={model}>
-      <section className="dashboard-welcome">
-        <p className="dashboard-eyebrow">
-          MI RESUMEN · GESTIÓN {model.year ?? "SIN CONFIGURAR"}
-        </p>
-        <h1>{title}</h1>
-        <p>{body}</p>
-        <span className="dashboard-status">
-          {model.demo ? "Vista de demostración" : "Información de tu cuenta"}
-        </span>
-      </section>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map(({ label, value, Icon }) => (
-          <Card key={label} className="dashboard-stat p-5 sm:p-6">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-sm leading-6 text-slate-500">{label}</p>
-              <Icon
-                className="shrink-0 rounded-lg bg-blue-50 p-2 text-blue-600"
-                size={38}
-              />
+      <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            {roleScope[model.role]}
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Tu escuela, en perspectiva<span className="text-primary">.</span>
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Una mirada al aprendizaje y a la actividad académica.
+          </p>
+        </div>
+        <Badge className="gap-2 border border-border bg-white px-3 py-2 text-muted-foreground">
+          <CalendarDays size={14} />
+          Gestión {model.year || "sin configurar"}
+        </Badge>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {stats.map((stat) => (
+          <Card className="stat-card p-5" key={stat.label}>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                {stat.label}
+              </p>
+              <span
+                className={`flex size-9 items-center justify-center rounded-xl ${stat.color}`}
+              >
+                <stat.icon size={17} />
+              </span>
             </div>
-            <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
-              {value}
+            <p className="mt-4 text-3xl font-semibold tracking-tight">
+              {stat.value}
+            </p>
+            <p className="mt-3 text-[10px] text-muted-foreground">
+              {stat.detail}
             </p>
           </Card>
         ))}
       </div>
-      {family && model.courseCount === 0 && (
-        <p className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6 text-blue-900">
-          Todavía no hay cursos vinculados visibles. Secretaría debe revisar la
-          matrícula y, para familias, el vínculo con el estudiante. Los datos
-          aparecerán cuando estén disponibles para tu cuenta.
-        </p>
-      )}
-      <div className="mt-8 space-y-7">
-        {(family
-          ? (["calificaciones", "asistencia", "horarios"] as const)
-          : (["asistencia", "calificaciones", "horarios"] as const)
-        ).map((module) => (
-          <section key={module}>
-            <div className="mb-3">
-              <h2 className="text-xl font-semibold">
-                {model.listings[module].title}
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                {model.listings[module].description}
-              </p>
+      <section className="learning-banner relative mt-6 overflow-hidden rounded-2xl bg-[#e5edff] p-6 lg:p-7">
+        <div className="absolute -right-12 -top-14 hidden size-64 rounded-full border-[35px] border-[#d1ddf9] sm:block" />
+        <div className="relative max-w-xl">
+          <p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+            Acompañamos cada paso
+          </p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight">
+            El aprendizaje también se cuida con información.
+          </h2>
+          <p className="mt-3 max-w-lg text-xs leading-6 text-[#52688e]">
+            Consulta calificaciones y asistencia para seguir el avance de los
+            estudiantes y acompañarlos a tiempo.
+          </p>
+          <Link
+            className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-primary"
+            href={panelHref(model, "calificaciones")}
+          >
+            Consultar calificaciones
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+      </section>
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-6">
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between gap-3 p-5">
+              <div>
+                <h2 className="text-sm font-semibold">
+                  Calificaciones recientes
+                </h2>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Resultados y evaluaciones pendientes
+                </p>
+              </div>
+              <Link
+                className="flex items-center gap-1 text-xs font-semibold text-primary"
+                href={panelHref(model, "calificaciones")}
+              >
+                Ver todas
+                <ArrowUpRight size={14} />
+              </Link>
             </div>
-            <Card className="overflow-hidden">
-              <RecordsTable listing={model.listings[module]} compact />
-            </Card>
-          </section>
-        ))}
+            <RecordsTable listing={model.listings.calificaciones} compact />
+          </Card>
+          <div>
+            <h2 className="mb-4 text-sm font-semibold">Accesos rápidos</h2>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {(
+                [
+                  {
+                    module: "estudiantes",
+                    icon: Users,
+                    text:
+                      model.role === "PADRE"
+                        ? "Consultar mis hijos"
+                        : "Ver estudiantes",
+                  },
+                  {
+                    module: "asistencia",
+                    icon: ClipboardCheck,
+                    text: "Consultar asistencia",
+                  },
+                  {
+                    module: "horarios",
+                    icon: CalendarDays,
+                    text: "Ver horarios",
+                  },
+                ] satisfies {
+                  module: Module;
+                  icon: typeof Users;
+                  text: string;
+                }[]
+              ).map((item) => (
+                <Link
+                  href={panelHref(model, item.module)}
+                  key={item.module}
+                  className="group flex items-center gap-3 rounded-xl border border-border bg-white p-4 text-xs font-semibold hover:border-primary/40"
+                >
+                  <item.icon className="text-primary" size={19} />
+                  {item.text}
+                  <ArrowUpRight
+                    className="ml-auto text-muted-foreground group-hover:text-primary"
+                    size={15}
+                  />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="min-w-0 space-y-6">
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold">Periodos de evaluación</h2>
+            <div className="mt-4 space-y-3">
+              {model.terms.map((term) => (
+                <div
+                  key={term.number}
+                  className="flex items-center justify-between text-xs"
+                >
+                  <span>{term.number}° trimestre</span>
+                  <Badge
+                    className={
+                      term.state === "ABIERTO"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-muted text-muted-foreground"
+                    }
+                  >
+                    {term.state === "ABIERTO"
+                      ? "Abierto"
+                      : term.state === "CERRADO"
+                        ? "Cerrado"
+                        : "Planificado"}
+                  </Badge>
+                </div>
+              ))}
+              {!model.terms.length && (
+                <p className="text-xs text-muted-foreground">
+                  No hay trimestres configurados.
+                </p>
+              )}
+            </div>
+          </Card>
+          <p className="flex items-start gap-2 px-1 text-[10px] leading-5 text-muted-foreground">
+            <ShieldCheck size={14} className="mt-0.5 shrink-0" />
+            {model.demo
+              ? "Esta demo muestra ejemplos ficticios de cada rol."
+              : "Solo se muestra información autorizada para tu cuenta."}
+          </p>
+        </div>
       </div>
-      <p className="mt-6 text-xs leading-6 text-slate-500">
-        Las listas muestran registros recientes autorizados para tu cuenta. Usa
-        el menú para consultar cada módulo. Un listado vacío no significa una
-        nota cero ni una falta.
-      </p>
     </PanelShell>
   );
 }

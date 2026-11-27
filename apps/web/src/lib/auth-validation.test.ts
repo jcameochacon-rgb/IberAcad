@@ -85,3 +85,17 @@ describe("Demostración separada de datos reales", () => {
     expect(isModule("calificaciones")).toBe(true);
   });
 });
+
+describe("clave de servicio", () => {
+  it("acepta errores de copiado frecuentes", async () => {
+    const { adminKeyStatus } = await import("./env");
+    expect(adminKeyStatus(undefined)).toBe("missing");
+    expect(adminKeyStatus("  ")).toBe("missing");
+    expect(adminKeyStatus("sb_secret_abc123")).toBe("ok");
+    expect(adminKeyStatus('"sb_secret_abc123"')).toBe("ok");
+    expect(adminKeyStatus("SUPABASE_SERVICE_ROLE_KEY=sb_secret_abc123\n")).toBe(
+      "ok",
+    );
+    expect(adminKeyStatus("sb_publishable_abc123")).toBe("invalid");
+  });
+});

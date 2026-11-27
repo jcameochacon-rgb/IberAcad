@@ -39,7 +39,10 @@ async function createTeacher(page: Page, name: string, ci: string) {
   await expect(
     page.getByRole("status").filter({ hasText: "Registro guardado" }),
   ).toBeVisible();
-  return new URL(page.url()).searchParams.get("id")!;
+  const savedUrl = new URL(page.url());
+  const id = savedUrl.searchParams.get("registro")!;
+  await page.goto(`${savedUrl.pathname}?id=${id}`);
+  return id;
 }
 async function createCourse(page: Page, parallel: string) {
   await page.goto("/panel/gestion/cursos?nuevo=1");
@@ -49,7 +52,10 @@ async function createCourse(page: Page, parallel: string) {
   await expect(
     page.getByRole("status").filter({ hasText: "Registro guardado" }),
   ).toBeVisible();
-  return new URL(page.url()).searchParams.get("id")!;
+  const savedUrl = new URL(page.url());
+  const id = savedUrl.searchParams.get("registro")!;
+  await page.goto(`${savedUrl.pathname}?id=${id}`);
+  return id;
 }
 
 test("Secretaría registra y edita docente, y reutiliza la persona de un tutor", async ({
@@ -93,6 +99,8 @@ test("Secretaría registra y edita docente, y reutiliza la persona de un tutor",
   await expect(
     page.getByRole("status").filter({ hasText: "Registro guardado" }),
   ).toBeVisible();
+  const shared = new URL(page.url()).searchParams.get("registro")!;
+  await page.goto(`/panel/gestion/docentes?id=${shared}`);
   await expect(page.getByLabel("Nombres *", { exact: true })).toHaveValue(
     "Persona compartida",
   );
@@ -113,7 +121,8 @@ test("asigna materia, evita duplicados y permite reactivar la misma asignación"
   await expect(
     page.getByRole("status").filter({ hasText: "Registro guardado" }),
   ).toBeVisible();
-  const assignment = new URL(page.url()).searchParams.get("id")!;
+  const assignment = new URL(page.url()).searchParams.get("registro")!;
+  await page.goto(`${new URL(page.url()).pathname}?id=${assignment}`);
   await page.getByLabel("Asignación activa").uncheck();
   await page
     .getByRole("button", { name: "Guardar cambios", exact: true })
@@ -154,7 +163,8 @@ test("asignación concede acceso al curso y su desactivación lo revoca", async 
   await expect(
     page.getByRole("status").filter({ hasText: "Registro guardado" }),
   ).toBeVisible();
-  const assignment = new URL(page.url()).searchParams.get("id")!;
+  const assignment = new URL(page.url()).searchParams.get("registro")!;
+  await page.goto(`${new URL(page.url()).pathname}?id=${assignment}`);
   await page
     .getByRole("button", { name: "Cerrar sesión", exact: true })
     .click();

@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useState } from "react";
 import { Eye, EyeOff, ArrowRight, LoaderCircle } from "lucide-react";
+import { BrandLoader } from "@/components/brand-loader";
 import { login, recoverPassword, updatePassword } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,12 +37,7 @@ export function AuthForm({
   );
   const [show, setShow] = useState(false);
   return (
-    <form
-      action={action}
-      className={
-        mode === "login" ? "login-auth-form mt-5 space-y-4" : "mt-8 space-y-5"
-      }
-    >
+    <form action={action} className="mt-6 space-y-4">
       {mode !== "update" && (
         <div>
           <label htmlFor="email" className="mb-2 block text-sm font-medium">
@@ -141,6 +137,9 @@ export function AuthForm({
         >
           {state.success}
         </p>
+      )}
+      {pending && mode === "login" && (
+        <BrandLoader overlay message="Ingresando a IberAcad…" />
       )}
       <Button
         type="submit"

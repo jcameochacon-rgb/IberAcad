@@ -135,3 +135,55 @@ describe("Gestión académica", () => {
     expect(searchTerm('%,id.eq.x,("')).not.toMatch(/[,%()"\\]/);
   });
 });
+
+describe("asignaturas", () => {
+  const base = Object.fromEntries(
+    [
+      "id",
+      "version",
+      "persona_version",
+      "nombres",
+      "apellido_paterno",
+      "apellido_materno",
+      "ci",
+      "telefono",
+      "direccion",
+      "rude",
+      "genero",
+      "fecha_nacimiento",
+      "activo",
+      "gestion_id",
+      "grado_id",
+      "paralelo",
+      "estudiante_id",
+      "tutor_id",
+      "parentesco",
+      "autorizado_consulta",
+      "contacto_principal",
+      "curso_id",
+      "fecha_ingreso",
+      "fecha_salida",
+      "estado",
+      "persona_modo",
+      "persona_id",
+      "especialidad",
+      "docente_id",
+      "asignatura_id",
+      "nombre",
+      "descripcion",
+    ].map((k) => [k, ""]),
+  );
+  it("exige nombre y limita la descripción", () => {
+    expect(validateManagement("asignaturas", base)).toMatch(/nombre/);
+    expect(
+      validateManagement("asignaturas", { ...base, nombre: "Música" }),
+    ).toBeNull();
+    expect(
+      validateManagement("asignaturas", {
+        ...base,
+        nombre: "Música",
+        descripcion: "x".repeat(501),
+      }),
+    ).toMatch(/500/);
+  });
+});

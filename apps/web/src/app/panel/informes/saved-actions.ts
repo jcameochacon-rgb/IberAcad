@@ -1,60 +1,94 @@
 "use server";
-import { requireProfile } from "@/lib/auth";
-import { canManage } from "@/lib/management-validation";
-import { reportParams } from "@/lib/reports";
 import { revalidatePath } from "next/cache";
-export async function saveReport(_: string, f: FormData) {
-  const { supabase, profile, user } = await requireProfile();
-  if (!canManage(profile.rol))
-    return "Sin permiso para administrar informes guardados.";
-  const id = String(f.get("id") || ""),
-    name = String(f.get("nombre") || "").trim(),
-    params =
-      f.get("campos") === "1"
-        ? new URLSearchParams(
-            Object.fromEntries(
-              ["tipo", "curso", "trimestre", "desde", "hasta"].map((k) => [
-                k,
-                String(f.get(k) || ""),
-              ]),
-            ),
-          ).toString()
-        : String(f.get("parametros") || "");
-  let result;
-  if (f.get("op") === "delete")
-    result = await supabase
+import { redirect } from "next/navigation";
+import { requireProfile } from "@/lib/auth";
+import { reportParams } from "@/lib/reports";
+import { uuidPattern } from "@/lib/management-validation";
+
+export type SavedReportState = { error?: string; ok?: string };
+const MISSING =
+  "Falta ejecutar en Supabase el archivo supabase/migrations/202611270001_ampliacion_modulos.sql.";
+
+/** Solo se guardan los filtros del informe, nunca sus datos. */
+function cleanParams(raw: string) {
+  const source = new URLSearchParams(raw);
+  const kept = new URLSearchParams();
+  for (const key of ["tipo", "curso", "trimestre", "desde", "hasta"]) {
+    const value = source.get(key);
+    if (value) kept.set(key, value);
+  }
+  reportParams(kept);
+  return kept.toString();
+}
+
+export async function saveReport(
+  _previous: SavedReportState,
+  form: FormData,
+): Promise<SavedReportState> {
+  const { supabase, user } = await requireProfile();
+  const op = String(form.get("op") ?? "");
+  const id = String(form.get("id") ?? "");
+  const name = String(form.get("nombre") ?? "").trim();
+  if (op !== "crear" && !uuidPattern.test(id))
+    return { error: "El informe guardado no es válido." };
+  if (op === "eliminar") {
+    const { data, error } = await supabase
       .from("reportes_guardados")
       .delete()
       .eq("id", id)
       .eq("propietario_id", user.id)
       .select("id");
-  else {
-    if (!name || name.length > 150)
-      return "Indica un nombre de hasta 150 caracteres.";
-    try {
-      reportParams(new URLSearchParams(params));
-    } catch {
-      return "Selecciona filtros válidos antes de guardar el informe.";
-    }
-    const values = {
-      nombre: name,
-      parametros: params,
-      updated_at: new Date().toISOString(),
+    if (error)
+      return {
+        error: error.code === "42P01" ? MISSING : "No se pudo eliminar.",
+      };
+    if (!data?.length) return { error: "El informe ya no existe." };
+    revalidatePath("/panel/informes");
+    return {
+      ok: "Informe guardado eliminado. Los datos académicos no cambian.",
     };
-    result = id
+  }
+  if (op === "renombrar" || op === "crear" || op === "actualizar") {
+    if (op !== "actualizar" && (!name || name.length > 150))
+      return { error: "Escribe un nombre de hasta 150 caracteres." };
+  } else return { error: "Operación no válida." };
+  let parametros = "";
+  if (op !== "renombrar") {
+    try {
+      parametros = cleanParams(String(form.get("parametros") ?? ""));
+    } catch {
+      return { error: "Genera un informe válido antes de guardarlo." };
+    }
+  }
+  const now = new Date().toISOString();
+  const result =
+    op === "crear"
       ? await supabase
           .from("reportes_guardados")
-          .update(values)
-          .eq("id", id)
-          .eq("propietario_id", user.id)
+          .insert({ propietario_id: user.id, nombre: name, parametros })
           .select("id")
       : await supabase
           .from("reportes_guardados")
-          .insert({ ...values, propietario_id: user.id })
+          .update(
+            op === "renombrar"
+              ? { nombre: name, updated_at: now }
+              : { parametros, updated_at: now },
+          )
+          .eq("id", id)
+          .eq("propietario_id", user.id)
           .select("id");
-  }
-  if (result.error || !result.data?.length)
-    return "No se pudo guardar. Verifica que las migraciones estén instaladas.";
+  if (result.error)
+    return {
+      error: result.error.code === "42P01" ? MISSING : "No se pudo guardar.",
+    };
+  if (!result.data?.length) return { error: "El informe ya no existe." };
   revalidatePath("/panel/informes");
-  return "Informe guardado actualizado.";
+  if (op === "crear")
+    redirect(`/panel/informes?${parametros}&guardado=${result.data[0].id}`);
+  return {
+    ok:
+      op === "renombrar"
+        ? "Nombre actualizado."
+        : "Filtros del informe actualizados.",
+  };
 }

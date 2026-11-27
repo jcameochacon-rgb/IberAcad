@@ -1,10 +1,12 @@
-import { CrudHeading } from "@/components/crud-heading";
-import { notFound } from "next/navigation";
-import { readAction, allowedActions } from "@/lib/workspace-navigation";
 import Link from "next/link";
+import { PageTitle } from "@/components/page-title";
 import { requireProfile } from "@/lib/auth";
 import { loadPanel } from "@/lib/data/live";
-import { loadScheduleCourses, loadScheduleSheet } from "@/lib/data/schedule";
+import {
+  loadInstitutionSchedule,
+  loadScheduleCourses,
+  loadScheduleSheet,
+} from "@/lib/data/schedule";
 import { canManage, uuidPattern } from "@/lib/management-validation";
 import { weekdays } from "@/lib/schedule-validation";
 import { PanelShell } from "@/components/panel-shell";
@@ -23,16 +25,15 @@ export default async function SchedulePage({
   const { profile } = await requireProfile(),
     model = await loadPanel(),
     courses = await loadScheduleCourses(),
+    institution = await loadInstitutionSchedule(),
     params = await searchParams;
-  const mode = readAction(params.accion);
-  if (!allowedActions(profile.rol, "horarios").includes(mode)) notFound();
   const course = typeof params.curso === "string" ? params.curso : "",
     id = typeof params.bloque === "string" ? params.bloque : "";
   const result = uuidPattern.test(course)
       ? await loadScheduleSheet(course)
       : null,
     sheet = result?.sheet,
-    manage = canManage(profile.rol) && mode !== "consultar";
+    manage = canManage(profile.rol);
   const block = sheet?.horarios.find((h) => h.id === id);
   const messages: Record<string, string> = {
     periodo: "Periodo actualizado para todos los cursos de la gestión.",
@@ -42,14 +43,33 @@ export default async function SchedulePage({
   };
   return (
     <PanelShell model={model} current="horarios">
-      <CrudHeading module="horarios" action={mode} />
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Organización semanal · Primaria
+          </p>
+          <PageTitle fallback="Consultar horario" />
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Consulta las clases del curso de lunes a viernes. Dirección y
+            Secretaría administran periodos y asignaciones.
+          </p>
+          {institution && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {institution.turno} · {institution.ingreso} a {institution.salida}{" "}
+              · seis periodos de 40 minutos
+            </p>
+          )}
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/panel/horarios">Asignación de horarios</Link>
+        </Button>
+      </div>
       <Card className="mb-6 p-5">
         <form
           method="get"
           action="/panel/horarios/semana"
           className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
         >
-          <input type="hidden" name="accion" value={mode} />
           <div>
             <label htmlFor="schedule-course" className="mb-2 block text-sm">
               Curso
@@ -134,20 +154,18 @@ export default async function SchedulePage({
                             ? a?.nombre || "Materia no visible para tu rol"
                             : "Sin asignar"}
                         </p>
-                        {manage && mode !== "registrar" && h && (
+                        {manage && h && (
                           <>
                             <p className="mt-1 break-words text-xs text-muted-foreground">
                               {a?.docente}
                               {a && !a.activo ? " · Asignación inactiva" : ""}
                             </p>
                             <Link
-                              href={`/panel/horarios/semana?accion=${mode}&curso=${course}&bloque=${h.id}#editar-bloque`}
+                              href={`/panel/horarios/semana?curso=${course}&bloque=${h.id}#editar-bloque`}
                               className="mt-3 inline-block text-xs font-semibold text-primary underline"
-                              aria-label={`${mode === "eliminar" ? "Eliminar" : "Editar"} ${day} periodo ${p.numero}`}
+                              aria-label={`Editar ${day} periodo ${p.numero}`}
                             >
-                              {mode === "eliminar"
-                                ? "Seleccionar para eliminar"
-                                : "Editar bloque"}
+                              Editar bloque
                             </Link>
                           </>
                         )}
@@ -166,65 +184,54 @@ export default async function SchedulePage({
           )}
           {manage && (
             <>
-              {mode === "editar" && (
-                <Card className="mb-6 p-5">
-                  <details>
-                    <summary className="cursor-pointer font-semibold">
-                      Configurar horas de los periodos
-                    </summary>
-                    <p className="my-4 text-sm leading-6 text-muted-foreground">
-                      Seis periodos de 40 minutos dentro de 14:00–18:05, sin
-                      superposición. Las horas son compartidas por todos los
-                      cursos de la gestión. Introduce el horario real; no se
-                      asignan horas ni recreos automáticamente.
-                    </p>
-                    <div className="space-y-4">
-                      {sheet.periodos.map((p) => (
-                        <PeriodForm
-                          key={`${p.id}-${p.updated_at}`}
-                          period={p}
-                          course={course}
-                          disabled={!!sheet.bloqueo}
-                        />
-                      ))}
-                    </div>
-                  </details>
-                </Card>
-              )}
-              {(mode === "registrar" || block) && (
-                <Card id="editar-bloque" className="scroll-mt-5 p-5">
-                  <h2 className="mb-5 text-lg font-semibold">
-                    {mode === "eliminar"
-                      ? "Eliminar bloque"
-                      : id
-                        ? "Editar bloque"
-                        : "Nuevo bloque"}
-                  </h2>
-                  {id && !block ? (
-                    <p role="alert" className="text-sm">
-                      El bloque ya no está disponible. Recarga el horario.
-                    </p>
-                  ) : (
-                    <>
-                      {mode !== "eliminar" &&
-                        (mode === "registrar" || block) && (
-                          <ScheduleForm
-                            key={`${block?.id || "nuevo"}-${block?.updated_at || ""}-${JSON.stringify(sheet.asignaciones)}-${JSON.stringify(sheet.periodos)}`}
-                            sheet={sheet}
-                            block={block}
-                          />
-                        )}
-                      {block && mode === "eliminar" && (
-                        <RemoveScheduleForm
-                          key={`${block.id}-${block.updated_at}`}
-                          block={block}
-                          course={course}
-                        />
-                      )}
-                    </>
-                  )}
-                </Card>
-              )}
+              <Card className="mb-6 p-5">
+                <details>
+                  <summary className="cursor-pointer font-semibold">
+                    Configurar horas de los periodos
+                  </summary>
+                  <p className="my-4 text-sm leading-6 text-muted-foreground">
+                    Seis periodos de 40 minutos dentro de 14:00–18:05, sin
+                    superposición. Las horas son compartidas por todos los
+                    cursos de la gestión. Introduce el horario real; no se
+                    asignan horas ni recreos automáticamente.
+                  </p>
+                  <div className="space-y-4">
+                    {sheet.periodos.map((p) => (
+                      <PeriodForm
+                        key={`${p.id}-${p.updated_at}`}
+                        period={p}
+                        course={course}
+                        disabled={!!sheet.bloqueo}
+                      />
+                    ))}
+                  </div>
+                </details>
+              </Card>
+              <Card id="editar-bloque" className="scroll-mt-5 p-5">
+                <h2 className="mb-5 text-lg font-semibold">
+                  {id ? "Editar bloque" : "Nuevo bloque"}
+                </h2>
+                {id && !block ? (
+                  <p role="alert" className="text-sm">
+                    El bloque ya no está disponible. Recarga el horario.
+                  </p>
+                ) : (
+                  <>
+                    <ScheduleForm
+                      key={`${block?.id || "nuevo"}-${block?.updated_at || ""}-${JSON.stringify(sheet.asignaciones)}-${JSON.stringify(sheet.periodos)}`}
+                      sheet={sheet}
+                      block={block}
+                    />
+                    {block && (
+                      <RemoveScheduleForm
+                        key={`${block.id}-${block.updated_at}`}
+                        block={block}
+                        course={course}
+                      />
+                    )}
+                  </>
+                )}
+              </Card>
             </>
           )}
           {!manage && (

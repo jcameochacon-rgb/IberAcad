@@ -3,9 +3,6 @@ node_modules/
 .env.*
 !.env.example
 .next/
-apps/mobile/.expo/
-apps/mobile/dist/
-apps/mobile/web-build/
 *.tsbuildinfo
 playwright-report/
 test-results/

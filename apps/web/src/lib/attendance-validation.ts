@@ -7,7 +7,7 @@ export const attendanceLabels = {
 };
 export type AttendanceMark = keyof typeof attendanceLabels;
 export const canRecordAttendance = (role: Role) =>
-  role === "DIRECTOR" || role === "SECRETARIA" || role === "DOCENTE";
+  role === "DIRECTOR" || role === "DOCENTE";
 export const isAttendanceId = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 export function isAttendanceDate(value: string) {

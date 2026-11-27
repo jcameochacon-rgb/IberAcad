@@ -38,7 +38,10 @@ async function course(page: Page, parallel: string) {
   await page.getByLabel("Paralelo *", { exact: true }).fill(parallel);
   await page.getByRole("button", { name: "Registrar", exact: true }).click();
   await saved(page);
-  return new URL(page.url()).searchParams.get("id")!;
+  const savedUrl = new URL(page.url());
+  const id = savedUrl.searchParams.get("registro")!;
+  await page.goto(`${savedUrl.pathname}?id=${id}`);
+  return id;
 }
 async function student(
   page: Page,
@@ -51,6 +54,12 @@ async function student(
   await page.getByLabel("Apellido paterno", { exact: true }).fill("Prueba");
   await page.getByRole("button", { name: "Registrar", exact: true }).click();
   await saved(page);
+  {
+    const savedUrl = new URL(page.url());
+    await page.goto(
+      `${savedUrl.pathname}?id=${savedUrl.searchParams.get("registro")}`,
+    );
+  }
   if (parent) {
     await pick(page, "Tutor", "Cuenta", "Cuenta ficticia Prueba");
     await page.getByLabel("Parentesco").fill("Tutor");
@@ -81,10 +90,11 @@ async function setup(
   await pick(page, "Materia", "Matemática", "Matemática");
   await page.getByRole("button", { name: "Registrar", exact: true }).click();
   await saved(page);
-  const a = new URL(page.url()).searchParams.get("id")!;
+  const a = new URL(page.url()).searchParams.get("registro")!;
+  await page.goto(`${new URL(page.url()).pathname}?id=${a}`);
   await page.goto(`/panel/calificaciones/registro?asignacion=${a}`);
   await expect(
-    page.getByRole("heading", { name: "Registro de calificaciones." }),
+    page.getByRole("heading", { name: "Registrar calificaciones." }),
   ).toBeVisible();
   for (const d of ["SER", "SABER", "HACER"]) {
     const details = page.locator("details");
@@ -134,6 +144,7 @@ async function completeGrade(page: Page) {
 test("calificaciones: configura actividades, guarda parcial y publica con privacidad familiar", async ({
   page,
 }) => {
+  test.setTimeout(90_000); // recorrido largo: varias cuentas y publicaciones
   const url = await setup(page, "FA", "Familia calificaciones", true);
   await page
     .getByRole("button", { name: "Cerrar sesión", exact: true })

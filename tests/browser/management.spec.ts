@@ -20,7 +20,10 @@ const createStudent = async (page: Page, name: string, rude: string) => {
   await expect(
     page.getByRole("status").filter({ hasText: "Registro guardado" }),
   ).toBeVisible();
-  return new URL(page.url()).searchParams.get("id")!;
+  const savedUrl = new URL(page.url());
+  const id = savedUrl.searchParams.get("registro")!;
+  await page.goto(`${savedUrl.pathname}?id=${id}`);
+  return id;
 };
 const createCourse = async (page: Page, parallel: string) => {
   await page.goto("/panel/gestion/cursos?nuevo=1");
@@ -30,174 +33,11 @@ const createCourse = async (page: Page, parallel: string) => {
   await expect(
     page.getByRole("status").filter({ hasText: "Registro guardado" }),
   ).toBeVisible();
-  return new URL(page.url()).searchParams.get("id")!;
+  const savedUrl = new URL(page.url());
+  const id = savedUrl.searchParams.get("registro")!;
+  await page.goto(`${savedUrl.pathname}?id=${id}`);
+  return id;
 };
-
-test("Gestión de Cursos muestra CRUD y cerrar sesión junto al perfil", async ({
-  page,
-}) => {
-  await login(page, "secretaria@example.invalid");
-
-  const account = page.locator(".workspace-account");
-  await expect(
-    account.getByRole("button", { name: "Cerrar sesión", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page
-      .locator(".workspace-sidebar")
-      .getByRole("button", { name: "Cerrar sesión", exact: true }),
-  ).toHaveCount(0);
-
-  await page
-    .getByRole("button", { name: "Gestión de Cursos", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Gestión de Cursos", exact: true })
-    .last()
-    .click();
-  for (const [action, href] of [
-    ["Registrar", "/panel/gestion/cursos?accion=registrar&nuevo=1"],
-    ["Consultar", "/panel/gestion/cursos?accion=consultar"],
-    ["Editar", "/panel/gestion/cursos?accion=editar"],
-    ["Eliminar", "/panel/gestion/cursos?accion=eliminar"],
-  ]) {
-    await expect(
-      page.getByRole("link", { name: action, exact: true }),
-    ).toHaveAttribute("href", href);
-  }
-
-  await page
-    .getByRole("button", { name: "Asignación de materias", exact: true })
-    .click();
-  await expect(
-    page.getByRole("link", { name: "Registrar", exact: true }),
-  ).toHaveAttribute(
-    "href",
-    "/panel/gestion/asignaciones?accion=registrar&nuevo=1",
-  );
-  await page.getByRole("link", { name: "Registrar", exact: true }).click();
-  await expect(page.getByLabel("Buscar docente")).toBeVisible();
-  await expect(page.getByLabel("Buscar curso")).toBeVisible();
-  await expect(page.getByLabel("Buscar materia")).toBeVisible();
-  await page.getByRole("button", { name: "Matrículas", exact: true }).click();
-  await expect(
-    page.getByRole("link", { name: "Matricular estudiante", exact: true }),
-  ).toHaveAttribute(
-    "href",
-    "/panel/gestion/matriculas?accion=registrar&nuevo=1",
-  );
-  await page
-    .getByRole("link", { name: "Matricular estudiante", exact: true })
-    .click();
-  await expect(page.getByLabel("Buscar estudiante")).toBeVisible();
-  await expect(page.getByLabel("Buscar curso")).toBeVisible();
-
-  await page
-    .getByRole("button", { name: "Gestión de usuarios", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Gestionar usuarios", exact: true })
-    .click();
-  await expect(
-    page.getByRole("link", { name: "Buscar usuarios", exact: true }),
-  ).toHaveAttribute("href", "/panel/usuarios?accion=consultar");
-  await expect(
-    page.getByRole("button", { name: "Fichas de padres y tutores" }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Cuentas familiares", exact: true })
-    .click();
-  await expect(
-    page.getByRole("link", { name: "Registrar", exact: true }),
-  ).toHaveAttribute(
-    "href",
-    "/panel/usuarios?modulo=familias&rol=PADRE&accion=registrar",
-  );
-  await page.getByRole("link", { name: "Registrar", exact: true }).click();
-  await expect(
-    page.getByRole("combobox", { name: "Rol", exact: true }),
-  ).toHaveValue("PADRE");
-  await expect(
-    page.getByLabel("Correo electrónico", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Personal administrativo", exact: true }),
-  ).toHaveCount(0);
-
-  await page.goto("/panel/usuarios");
-  await expect(
-    page.getByRole("heading", { name: "Gestión de usuarios" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("textbox", { name: "Buscar registros" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Crear usuario", exact: true }),
-  ).toHaveAttribute("href", "/panel/usuarios?accion=registrar");
-});
-
-test("Dirección abre el CRUD del personal administrativo", async ({ page }) => {
-  await login(page);
-  await page
-    .getByRole("button", { name: "Gestión de usuarios", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Personal administrativo", exact: true })
-    .click();
-  await expect(
-    page.getByRole("link", { name: "Registrar", exact: true }),
-  ).toHaveAttribute(
-    "href",
-    "/panel/usuarios?modulo=personal&rol=SECRETARIA&accion=registrar",
-  );
-  await page.getByRole("link", { name: "Registrar", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Personal administrativo" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("combobox", { name: "Rol", exact: true }),
-  ).toHaveValue("SECRETARIA");
-  await expect(page.getByLabel("Nombres", { exact: true })).toBeVisible();
-  await expect(
-    page.getByLabel("Correo electrónico", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByLabel("CI", { exact: true })).toBeVisible();
-  await expect(
-    page.getByText("Vincular una cuenta a una ficha existente", {
-      exact: true,
-    }),
-  ).toBeVisible();
-
-  await page.goto("/panel/usuarios?accion=registrar");
-  await expect(
-    page.getByLabel("Correo electrónico", { exact: true }),
-  ).toHaveAttribute("type", "email");
-  const role = page.getByRole("combobox", { name: "Rol", exact: true });
-  for (const label of [
-    "Administrador",
-    "Estudiante",
-    "Personal administrativo",
-    "Docente",
-    "Padre / tutor",
-  ])
-    await expect(role).toContainText(label);
-  await role.selectOption("ESTUDIANTE");
-  await expect(page.getByLabel("RUDE", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Fecha de nacimiento")).toBeVisible();
-  await role.selectOption("DOCENTE");
-  await expect(page.getByLabel("Especialidad", { exact: true })).toBeVisible();
-  await role.selectOption("PADRE");
-  await expect(page.getByLabel("Dirección", { exact: true })).toBeVisible();
-  await page.goto("/panel/usuarios?accion=registrar&rol=ESTUDIANTE");
-  await expect(
-    page.getByRole("combobox", { name: "Rol", exact: true }),
-  ).toHaveValue("ESTUDIANTE");
-  await expect(
-    page.getByLabel("Correo electrónico", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByLabel("Nombres", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("RUDE", { exact: true })).toBeVisible();
-});
 
 test("Secretaría registra y edita estudiantes; la búsqueda consulta toda la lista", async ({
   page,
@@ -252,7 +92,8 @@ test("tutor vinculado y matrícula sobreviven a una recarga; el retiro conserva 
   await expect(
     page.getByRole("status").filter({ hasText: "Registro guardado" }),
   ).toBeVisible();
-  const tutor = new URL(page.url()).searchParams.get("id")!;
+  const tutor = new URL(page.url()).searchParams.get("registro")!;
+  await page.goto(`${new URL(page.url()).pathname}?id=${tutor}`);
   const student = await createStudent(
     page,
     "Estudiante vinculado",
@@ -287,6 +128,8 @@ test("tutor vinculado y matrícula sobreviven a una recarga; el retiro conserva 
   await expect(
     page.getByRole("status").filter({ hasText: "Registro guardado" }),
   ).toBeVisible();
+  const enrollment = new URL(page.url()).searchParams.get("registro")!;
+  await page.goto(`/panel/gestion/matriculas?id=${enrollment}`);
   await page.getByLabel("Estado de matrícula").selectOption("RETIRADA");
   await page.getByLabel("Fecha de salida").fill("2026-05-01");
   await page

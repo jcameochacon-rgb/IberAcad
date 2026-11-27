@@ -64,3 +64,39 @@ export function demoEnabled(): boolean {
       process.env.ENABLE_DEMO !== "false")
   );
 }
+/**
+ * Limpia errores de copiado frecuentes al pegar la clave en el hosting:
+ * comillas alrededor, espacios o saltos de línea, o el nombre de la variable delante.
+ */
+export function cleanSecret(raw?: string): string {
+  let key = (raw ?? "").trim();
+  key = key.replace(/^SUPABASE_SERVICE_ROLE_KEY\s*=\s*/, "");
+  key = key.replace(/^["'](.*)["']$/s, "$1");
+  return key.replace(/\s+/g, "");
+}
+export type AdminKeyStatus = "ok" | "missing" | "invalid";
+/** Clave de servicio (solo servidor). Permite invitar usuarios y gestionar sus cuentas. */
+export function adminKeyStatus(raw?: string): AdminKeyStatus {
+  const key = cleanSecret(raw);
+  if (!key) return "missing";
+  if (key.startsWith("sb_secret_") && key.length > 10) return "ok";
+  try {
+    const claims = JSON.parse(
+      atob(key.split(".")[1]?.replace(/-/g, "+").replace(/_/g, "/") ?? ""),
+    ) as { role?: string };
+    return claims.role === "service_role" ? "ok" : "invalid";
+  } catch {
+    return "invalid";
+  }
+}
+export function getAdminStatus(): AdminKeyStatus {
+  return adminKeyStatus(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+export function getAdminConfig(): SupabaseConfig | null {
+  const base = getSupabaseConfig();
+  if (!base || getAdminStatus() !== "ok") return null;
+  return {
+    url: base.url,
+    key: cleanSecret(process.env.SUPABASE_SERVICE_ROLE_KEY),
+  };
+}

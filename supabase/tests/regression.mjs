@@ -1,4 +1,3 @@
-// HISTÓRICO: suite de fase 0.9, anterior a la retirada de comunicados. Usar npm run test:db para el esquema vigente.
 /** Pruebas en PostgreSQL embebido PGlite. No conectan a cuentas/proyectos remotos. */
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync,readdirSync } from 'node:fs';
@@ -35,8 +34,8 @@ try{
  grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`);
  const migrations=new URL('../migrations/',import.meta.url);
  for(const file of readdirSync(migrations).filter(f=>f.endsWith('.sql')).sort()) await q(readFileSync(new URL(file,migrations),'utf8'));
- await check('migración completa y 28 tablas con RLS',async()=>{
-  assert.equal(Number((await scalar("select count(*) n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and c.relrowsecurity")).n),28);
+ await check('migración completa y 29 tablas con RLS (incluye reportes_guardados)',async()=>{
+  assert.equal(Number((await scalar("select count(*) n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and c.relrowsecurity")).n),29);
   assert.equal(await count('grados'),6);assert.equal(await count('asignaturas'),9);assert.equal(await count('trimestres'),3);assert.equal(await count('periodos'),6);
  });
  await check('alta inicial de Dirección vincula una cuenta existente sin contraseña',async()=>{

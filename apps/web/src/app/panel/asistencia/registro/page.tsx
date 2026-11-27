@@ -1,7 +1,5 @@
-import { CrudHeading } from "@/components/crud-heading";
-import { readAction } from "@/lib/workspace-navigation";
-import { AcademicDelete } from "@/components/academic-delete";
 import Link from "next/link";
+import { PageTitle } from "@/components/page-title";
 import { requireProfile } from "@/lib/auth";
 import {
   canRecordAttendance,
@@ -43,18 +41,6 @@ export default async function AttendanceRegister({
       </PanelShell>
     );
   const params = await searchParams;
-  const mode = readAction(params.accion, "registrar");
-  if (mode === "eliminar")
-    return (
-      <PanelShell model={model} current="asistencia">
-        <CrudHeading module="asistencia" action="eliminar" />
-        <AcademicDelete
-          model={model}
-          tipo="asistencia"
-          selectedId={typeof params.id === "string" ? params.id : undefined}
-        />
-      </PanelShell>
-    );
   const curso = typeof params.curso === "string" ? params.curso : "";
   const fecha =
     typeof params.fecha === "string" ? params.fecha : todayInLaPaz();
@@ -72,14 +58,27 @@ export default async function AttendanceRegister({
   };
   return (
     <PanelShell model={model} current="asistencia">
-      <CrudHeading module="asistencia" action={mode} />
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Asistencia diaria · Dirección y docentes
+          </p>
+          <PageTitle fallback="Registro de asistencia" />
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Selecciona un curso y una fecha. Revisa las marcas antes de publicar
+            la jornada.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/panel/asistencia">Ver registros</Link>
+        </Button>
+      </div>
       <Card className="mb-6 p-5">
         <form
           action="/panel/asistencia/registro"
           method="get"
           className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_180px_auto]"
         >
-          <input type="hidden" name="accion" value={mode} />
           <div className="min-w-0">
             <label
               htmlFor="attendance-course"

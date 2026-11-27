@@ -1,6 +1,6 @@
 {
   "name": "@iberdrola/web",
-  "version": "0.12.2",
+  "version": "0.9.3",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",

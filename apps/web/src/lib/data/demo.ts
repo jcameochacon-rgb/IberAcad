@@ -100,7 +100,30 @@ export function demoPanel(role: Role): PanelModel {
         },
       })),
     },
-
+    comunicados: {
+      ...labels.comunicados,
+      total: 2,
+      rows: [
+        {
+          id: "notice-1",
+          cells: {
+            title: "Reunión con las familias",
+            date: "05 oct 2026",
+            status: "PUBLICADO",
+          },
+          tone: "success",
+        },
+        {
+          id: "notice-2",
+          cells: {
+            title: "Acompañamos el aprendizaje",
+            date: "04 oct 2026",
+            status: "PUBLICADO",
+          },
+          tone: "success",
+        },
+      ],
+    },
   };
   return {
     role,
@@ -124,6 +147,21 @@ export function demoPanel(role: Role): PanelModel {
       { number: 2, state: "PLANIFICADO" },
       { number: 3, state: "PLANIFICADO" },
     ],
-
+    notices: [
+      {
+        id: "notice-1",
+        title: "Reunión con las familias",
+        content:
+          "Ejemplo de aviso: compartiremos el avance de los estudiantes y actividades de acompañamiento.",
+        date: "2026-10-05T18:00:00-04:00",
+      },
+      {
+        id: "notice-2",
+        title: "Acompañamos el aprendizaje",
+        content:
+          "Ejemplo de aviso: dediquemos un momento cada día a la lectura en familia.",
+        date: "2026-10-04T18:00:00-04:00",
+      },
+    ],
   };
 }

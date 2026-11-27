@@ -38,13 +38,15 @@ async function setup(page: Page, parallel: string) {
   await page.getByLabel("Paralelo *", { exact: true }).fill(parallel);
   await page.getByRole("button", { name: "Registrar", exact: true }).click();
   await saved(page);
-  const c = new URL(page.url()).searchParams.get("id")!;
+  const c = new URL(page.url()).searchParams.get("registro")!;
+  await page.goto(`${new URL(page.url()).pathname}?id=${c}`);
   await page.goto(`/panel/gestion/asignaciones?nuevo=1&curso=${c}`);
   await pick(page, "Docente", "Cuenta", "Cuenta ficticia Prueba");
   await pick(page, "Materia", "Matemática", "Matemática");
   await page.getByRole("button", { name: "Registrar", exact: true }).click();
   await saved(page);
-  const a = new URL(page.url()).searchParams.get("id")!;
+  const a = new URL(page.url()).searchParams.get("registro")!;
+  await page.goto(`${new URL(page.url()).pathname}?id=${a}`);
   await page.goto(`/panel/horarios/semana?curso=${c}`);
   return { c, a };
 }
@@ -69,18 +71,30 @@ async function configure(page: Page, n: number, start: string, end: string) {
   ).toBeVisible();
 }
 async function block(page: Page, a: string, day: string, n: number) {
-  await page.getByLabel("Materia y docente", { exact: true }).selectOption(a);
-  await page.getByLabel("Día de clase", { exact: true }).selectOption(day);
-  const option = page
-    .locator("#schedule-period option")
-    .filter({ hasText: `Periodo ${n} ·` });
-  await page
-    .getByLabel("Periodo de clase", { exact: true })
-    .selectOption((await option.getAttribute("value")) || "");
+  // Tras guardar un periodo la página se recarga y reinicia el formulario:
+  // se elige todo y se comprueba que siga elegido un momento después.
+  const subject = page.getByLabel("Materia y docente", { exact: true });
+  const weekday = page.getByLabel("Día de clase", { exact: true });
+  const period = page.getByLabel("Periodo de clase", { exact: true });
+  await expect(async () => {
+    await page.waitForLoadState("networkidle");
+    const value =
+      (await page
+        .locator("#schedule-period option")
+        .filter({ hasText: `Periodo ${n} ·` })
+        .getAttribute("value")) || "";
+    await subject.selectOption(a);
+    await weekday.selectOption(day);
+    await period.selectOption(value);
+    await page.waitForTimeout(1500);
+    await expect(subject).toHaveValue(a, { timeout: 500 });
+    await expect(period).toHaveValue(value, { timeout: 500 });
+  }).toPass({ timeout: 30000 });
 }
 test("horarios: Secretaría configura periodos, evita cruces, edita y retira bloques", async ({
   page,
 }) => {
+  test.setTimeout(90_000); // varios guardados con recarga de página
   await login(page, "secretaria@example.invalid");
   const { c, a } = await setup(page, "HA");
   await configure(page, 1, "14:00", "14:40");
@@ -187,7 +201,7 @@ test("horarios: conflicto entre pestañas conserva selección y vista móvil no 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/panel/horarios/semana?curso=${c}`);
   await expect(
-    page.getByRole("heading", { name: "Horario semanal.", exact: true }),
+    page.getByRole("heading", { name: "Consultar horario.", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Añadir bloque", exact: true }),
@@ -206,7 +220,7 @@ test("horarios: conflicto entre pestañas conserva selección y vista móvil no 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Horario semanal.", exact: true }),
+    page.getByRole("heading", { name: "Consultar horario.", exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Añadir bloque", exact: true })
@@ -250,4 +264,13 @@ test("horarios: docente consulta sin botones administrativos", async ({
   await expect(
     page.getByText("Configurar horas de los periodos", { exact: true }),
   ).toHaveCount(0);
+});
+test("el horario semanal muestra el turno y los periodos de la institución", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/panel/horarios/semana");
+  await expect(
+    page.getByText("Turno tarde · 14:00 a 18:05 · seis periodos de 40 minutos"),
+  ).toBeVisible();
 });

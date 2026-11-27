@@ -1,12 +1,9 @@
-import { EnrolmentPanel } from "@/components/enrolment-panel";
-import { TeacherAssignmentPanel } from "@/components/teacher-assignment-panel";
-import { CrudHeading } from "@/components/crud-heading";
-import { readAction } from "@/lib/workspace-navigation";
-import { OperationForm } from "@/components/operation-form";
-import { deleteRecord } from "@/app/panel/delete-actions";
 import Link from "next/link";
+import { PageTitle } from "@/components/page-title";
 import { notFound } from "next/navigation";
 import {
+  Plus,
+  ArrowLeft,
   Pencil,
   UsersRound,
   BookOpen,
@@ -14,6 +11,7 @@ import {
   UserRoundCheck,
   Presentation,
   ClipboardList,
+  Library,
 } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { loadPanel } from "@/lib/data/live";
@@ -25,18 +23,23 @@ import {
   fullName,
   managementLabels,
   assignmentHasRecords,
+  loadFilterOptions,
 } from "@/lib/data/management";
 import {
   isManagementSection,
+  managementSections,
   canManage,
   uuidPattern,
   localToday,
+  managementSingular,
+  managementNewLabel,
 } from "@/lib/management-validation";
 import { PanelShell } from "@/components/panel-shell";
 import { ManagementForm, type FormField } from "@/components/management-form";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const personFields: FormField[] = [
   { name: "nombres", label: "Nombres", required: true, maxLength: 120 },
@@ -56,9 +59,48 @@ const icons = {
   matriculas: UsersRound,
   docentes: Presentation,
   asignaciones: ClipboardList,
+  asignaturas: Library,
 };
 type Query = Record<string, string | string[] | undefined>;
 const textParam = (v: Query[string]) => (typeof v === "string" ? v : "");
+type FilterKey =
+  "gestion" | "curso" | "docente" | "asignatura" | "grado" | "estado";
+const filterLabels: Record<FilterKey, string> = {
+  gestion: "Gestión",
+  curso: "Curso",
+  docente: "Docente",
+  asignatura: "Materia",
+  grado: "Año",
+  estado: "Estado",
+};
+/** Filtros disponibles en cada lista de gestión. */
+const filterFields = (section: string): FilterKey[] =>
+  section === "asignaciones"
+    ? ["gestion", "curso", "docente", "asignatura", "estado"]
+    : section === "matriculas"
+      ? ["gestion", "curso", "estado"]
+      : section === "cursos"
+        ? ["gestion", "grado", "estado"]
+        : ["estado"];
+const gradeOptions = [1, 2, 3, 4, 5, 6].map((g) => ({
+  id: String(g),
+  label: `${g}° de primaria`,
+}));
+const enrolmentStates = [
+  { id: "ACTIVA", label: "Activa" },
+  { id: "RETIRADA", label: "Retirada" },
+  { id: "FINALIZADA", label: "Finalizada" },
+];
+const activeStates = (section: string) =>
+  section === "asignaciones"
+    ? [
+        { id: "activo", label: "Activas" },
+        { id: "inactivo", label: "Inactivas" },
+      ]
+    : [
+        { id: "activo", label: "Activos" },
+        { id: "inactivo", label: "Inactivos" },
+      ];
 
 export default async function ManagementPage({
   params,
@@ -86,11 +128,9 @@ export default async function ManagementPage({
       </PanelShell>
     );
   const query = await searchParams;
-  const mode = readAction(query.accion, query.id ? "editar" : "consultar");
   const id = textParam(query.id);
   if (id && !uuidPattern.test(id)) notFound();
-  const editing =
-    mode !== "consultar" && (Boolean(id) || textParam(query.nuevo) === "1");
+  const editing = Boolean(id) || textParam(query.nuevo) === "1";
   const base = `/panel/gestion/${seccion}`;
   const page = Math.max(
     1,
@@ -98,42 +138,39 @@ export default async function ManagementPage({
   );
   const q = textParam(query.q).slice(0, 100);
   const courseFilter = textParam(query.curso),
-    teacherFilter = textParam(query.docente);
+    teacherFilter = textParam(query.docente),
+    yearFilter = textParam(query.gestion),
+    subjectFilter = textParam(query.asignatura),
+    gradeFilter = textParam(query.grado),
+    stateFilter = textParam(query.estado);
   if (
-    (courseFilter && !uuidPattern.test(courseFilter)) ||
-    (teacherFilter && !uuidPattern.test(teacherFilter))
+    [courseFilter, teacherFilter, yearFilter, subjectFilter].some(
+      (v) => v && !uuidPattern.test(v),
+    ) ||
+    (gradeFilter && !/^[1-6]$/.test(gradeFilter)) ||
+    (stateFilter &&
+      !["activo", "inactivo", "ACTIVA", "RETIRADA", "FINALIZADA"].includes(
+        stateFilter,
+      ))
   )
     notFound();
-  const estado = textParam(query.estado),
-    campo = textParam(query.campo),
-    grado = textParam(query.grado),
-    gestion = textParam(query.gestion),
-    genero = textParam(query.genero);
-  if (gestion && !uuidPattern.test(gestion)) notFound();
-  const years = seccion === "cursos" && !editing ? await loadCourseYears() : [];
+  const filters = {
+    curso: courseFilter,
+    docente: teacherFilter,
+    gestion: yearFilter,
+    asignatura: subjectFilter,
+    grado: gradeFilter,
+    estado: stateFilter,
+  };
   const filterQuery = new URLSearchParams();
-  for (const [key, value] of Object.entries({
-    estado,
-    campo,
-    grado,
-    gestion,
-    genero,
-  }))
+  for (const [key, value] of Object.entries(filters))
     if (value) filterQuery.set(key, value);
-  if (courseFilter) filterQuery.set("curso", courseFilter);
-  if (teacherFilter) filterQuery.set("docente", teacherFilter);
   const filterSuffix = filterQuery.size ? `&${filterQuery}` : "";
+  const activeFilterCount = filterQuery.size;
   const listing = editing
     ? null
-    : await loadManagement(seccion, q, page, {
-        curso: courseFilter,
-        docente: teacherFilter,
-        estado,
-        campo,
-        grado,
-        gestion,
-        genero,
-      });
+    : await loadManagement(seccion, q, page, filters);
+  const filterOptions = editing ? null : await loadFilterOptions();
   const loaded = editing ? await loadRecord(seccion, id || null) : null;
   if (editing && !loaded) notFound();
   const defaults: Record<string, string> = { ...loaded?.defaults };
@@ -296,6 +333,22 @@ export default async function ManagementPage({
       },
       { name: "activo", label: "Asignación activa", type: "checkbox" },
     );
+  } else if (seccion === "asignaturas" && editing) {
+    fields.push(
+      {
+        name: "nombre",
+        label: "Nombre de la materia",
+        required: true,
+        maxLength: 120,
+      },
+      {
+        name: "descripcion",
+        label: "Descripción",
+        type: "textarea",
+        maxLength: 500,
+      },
+      { name: "activo", label: "Materia activa", type: "checkbox" },
+    );
   } else if (seccion === "cursos" && editing) {
     const years = await loadCourseYears();
     if (!id) defaults.gestion_id = years.find((y) => y.activo)?.id || "";
@@ -397,30 +450,62 @@ export default async function ManagementPage({
   const Icon = icons[seccion];
   return (
     <PanelShell model={model} current="gestion">
-      {seccion === "estudiantes" || seccion === "docentes" ? (
-        <CrudHeading module={seccion} action={mode} />
-      ) : (
-        <h1 className="mb-6 text-3xl font-semibold">
-          {managementLabels[seccion]}
-        </h1>
-      )}
-      {editing && (
-        <Link
-          className="mb-5 inline-block text-blue-700"
-          href={`${base}?accion=${mode}`}
-        >
-          Volver a la selección
-        </Link>
-      )}
-
-      {textParam(query.eliminado) === "1" && (
-        <p
-          role="status"
-          className="mb-5 rounded-xl bg-blue-50 p-4 text-blue-800"
-        >
-          Registro eliminado correctamente.
-        </p>
-      )}
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Gestión académica · Dirección y Secretaría
+          </p>
+          {editing ? (
+            <h1 className="text-3xl font-semibold tracking-tight">
+              {`${id ? "Editar" : "Registrar"} ${managementSingular[seccion]}`}
+              <span className="text-primary">.</span>
+            </h1>
+          ) : (
+            <PageTitle fallback={managementLabels[seccion]} />
+          )}
+          <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+            {editing
+              ? "Completa la ficha y guarda los cambios. Los campos con * son obligatorios."
+              : "Registra las fichas, vincula responsables y organiza las matrículas por gestión."}
+          </p>
+        </div>
+        {!editing && (
+          <Button asChild>
+            <Link href={`${base}?nuevo=1${filterSuffix}`}>
+              <Plus size={17} />
+              {managementNewLabel[seccion]}
+            </Link>
+          </Button>
+        )}
+        {editing && (
+          <Button asChild variant="outline">
+            <Link href={base}>
+              <ArrowLeft size={16} />
+              Volver a la lista
+            </Link>
+          </Button>
+        )}
+      </div>
+      <nav
+        className="mb-6 flex flex-wrap gap-2"
+        aria-label="Secciones de gestión"
+      >
+        {managementSections.map((s) => (
+          <Link
+            key={s}
+            href={`/panel/gestion/${s}`}
+            aria-current={s === seccion ? "page" : undefined}
+            className={cn(
+              "rounded-lg border px-4 py-2 text-sm",
+              s === seccion
+                ? "border-primary bg-primary text-white"
+                : "border-border bg-white hover:bg-muted",
+            )}
+          >
+            {managementLabels[s]}
+          </Link>
+        ))}
+      </nav>
       {textParam(query.guardado) === "1" && (
         <p
           role="status"
@@ -429,22 +514,6 @@ export default async function ManagementPage({
           Registro guardado correctamente.
         </p>
       )}
-      {!editing &&
-        seccion === "asignaciones" &&
-        (courseFilter || teacherFilter) && (
-          <p className="mb-4 text-sm text-muted-foreground">
-            Asignaciones filtradas por{" "}
-            {courseFilter && teacherFilter
-              ? "curso y docente"
-              : courseFilter
-                ? "curso"
-                : "docente"}
-            .{" "}
-            <Link href={base} className="text-primary">
-              Ver todas
-            </Link>
-          </p>
-        )}
       {!editing && listing && (
         <Card className="overflow-hidden">
           <form
@@ -452,136 +521,62 @@ export default async function ManagementPage({
             method="get"
             className="flex flex-wrap items-center gap-3 border-b border-border p-5"
           >
-            <input type="hidden" name="accion" value={mode} />
-            {courseFilter && (
-              <input type="hidden" name="curso" value={courseFilter} />
-            )}
-            {teacherFilter && (
-              <input type="hidden" name="docente" value={teacherFilter} />
-            )}
-            <label className="grid gap-1 text-xs text-slate-600">
-              Buscar
-              <Input
-                name="q"
-                defaultValue={q}
-                aria-label="Buscar registros"
-                placeholder={
-                  seccion === "cursos"
-                    ? "Buscar paralelo…"
-                    : campo === "rude"
-                      ? "Escribe el RUDE…"
-                      : campo === "especialidad"
-                        ? "Escribe la especialidad…"
-                        : ["estudiantes", "docentes", "tutores"].includes(
-                              seccion,
-                            )
-                          ? "Nombre, apellido, CI o teléfono…"
-                          : "Nombre o apellido…"
-                }
-                maxLength={100}
-                className="max-w-sm"
-              />
-            </label>
-            {["estudiantes", "docentes"].includes(seccion) && (
-              <label className="grid gap-1 text-xs text-slate-600">
-                Buscar en
-                <select
-                  name="campo"
-                  defaultValue={campo}
-                  className="h-10 rounded-lg border border-slate-200 bg-white px-3"
-                >
-                  <option value="">Datos personales</option>
-                  {seccion === "estudiantes" ? (
-                    <option value="rude">RUDE</option>
-                  ) : (
-                    <option value="especialidad">Especialidad</option>
-                  )}
-                </select>
-              </label>
-            )}
-            <label className="grid gap-1 text-xs text-slate-600">
-              Estado
-              <select
-                name="estado"
-                defaultValue={estado}
-                className="h-10 rounded-lg border border-slate-200 bg-white px-3"
-              >
-                <option value="">Todos</option>
-                {(seccion === "matriculas"
-                  ? [
-                      ["ACTIVA", "Activa"],
-                      ["RETIRADA", "Retirada"],
-                      ["FINALIZADA", "Finalizada"],
-                    ]
-                  : [
-                      ["activo", "Activo"],
-                      ["inactivo", "Inactivo"],
-                    ]
-                ).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {seccion === "estudiantes" && (
-              <label className="grid gap-1 text-xs text-slate-600">
-                Género
-                <select
-                  name="genero"
-                  defaultValue={genero}
-                  className="h-10 rounded-lg border border-slate-200 bg-white px-3"
-                >
-                  <option value="">Todos</option>
-                  <option value="M">Masculino</option>
-                  <option value="F">Femenino</option>
-                  <option value="NO_ESPECIFICADO">No especificado</option>
-                </select>
-              </label>
-            )}
-            {seccion === "cursos" && (
-              <>
-                <label className="grid gap-1 text-xs text-slate-600">
-                  Grado
+            <Input
+              name="q"
+              defaultValue={q}
+              aria-label="Buscar registros"
+              placeholder={
+                seccion === "cursos"
+                  ? "Buscar paralelo…"
+                  : seccion === "asignaturas"
+                    ? "Buscar materia…"
+                    : "Buscar por nombre o apellido…"
+              }
+              maxLength={100}
+              className="max-w-xs"
+            />
+            {filterOptions &&
+              filterFields(seccion).map((f) => {
+                const options =
+                  f === "gestion"
+                    ? filterOptions.years
+                    : f === "curso"
+                      ? filterOptions.courses
+                      : f === "docente"
+                        ? filterOptions.teachers
+                        : f === "asignatura"
+                          ? filterOptions.subjects
+                          : f === "grado"
+                            ? gradeOptions
+                            : seccion === "matriculas"
+                              ? enrolmentStates
+                              : activeStates(seccion);
+                return (
                   <select
-                    name="grado"
-                    defaultValue={grado}
-                    className="h-10 rounded-lg border border-slate-200 bg-white px-3"
+                    key={f}
+                    name={f}
+                    aria-label={`Filtrar por ${filterLabels[f]}`}
+                    defaultValue={filters[f]}
+                    className={cn(
+                      "h-11 max-w-[14rem] rounded-lg border border-input bg-background px-3 text-sm",
+                      filters[f] && "border-primary text-primary",
+                    )}
                   >
-                    <option value="">Todos</option>
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <option key={n} value={n}>
-                        {n}°
+                    <option value="">{filterLabels[f]}: todos</option>
+                    {options.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
                       </option>
                     ))}
                   </select>
-                </label>
-                <label className="grid gap-1 text-xs text-slate-600">
-                  Gestión
-                  <select
-                    name="gestion"
-                    defaultValue={gestion}
-                    className="h-10 rounded-lg border border-slate-200 bg-white px-3"
-                  >
-                    <option value="">Todas</option>
-                    {years.map((y) => (
-                      <option key={y.id} value={y.id}>
-                        {y.anio}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            )}
+                );
+              })}
             <Button variant="outline" type="submit">
               Buscar
             </Button>
-            {(q || filterQuery.size > 0) && (
-              <Link
-                href={`${base}?accion=${mode}`}
-                className="text-sm text-primary"
-              >
-                Limpiar
+            {(q || activeFilterCount > 0) && (
+              <Link href={base} className="text-sm text-primary">
+                Limpiar filtros
               </Link>
             )}
             <span className="ml-auto text-xs text-muted-foreground">
@@ -602,11 +597,9 @@ export default async function ManagementPage({
                       {c.label}
                     </th>
                   ))}
-                  {mode !== "consultar" && (
-                    <th scope="col" className="px-5 py-3">
-                      Acción
-                    </th>
-                  )}
+                  <th scope="col" className="px-5 py-3">
+                    Acciones
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -615,27 +608,21 @@ export default async function ManagementPage({
                     {listing.columns.map((c) => (
                       <td
                         key={c.key}
-                        className="min-w-28 max-w-xs break-words px-5 py-4 text-sm"
+                        className="whitespace-nowrap px-5 py-4 text-xs"
                       >
                         {row.cells[c.key] || "—"}
                       </td>
                     ))}
-                    {mode !== "consultar" && (
-                      <td className="px-5 py-4">
-                        {
-                          <Link
-                            aria-label={`Seleccionar ${String(Object.values(row.cells)[0])}`}
-                            href={`${base}?accion=${mode}&id=${row.id}`}
-                            className="inline-flex items-center gap-2 text-xs font-medium text-primary"
-                          >
-                            <Pencil size={14} />
-                            {mode === "eliminar"
-                              ? "Seleccionar para eliminar"
-                              : "Editar"}
-                          </Link>
-                        }
-                      </td>
-                    )}
+                    <td className="px-5 py-4">
+                      <Link
+                        aria-label={`Editar ${String(Object.values(row.cells)[0])}`}
+                        href={`${base}?id=${row.id}`}
+                        className="inline-flex items-center gap-2 text-xs font-medium text-primary"
+                      >
+                        <Pencil size={14} />
+                        Editar
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -645,11 +632,13 @@ export default async function ManagementPage({
             <div className="px-6 py-10 text-center">
               <Icon size={28} className="mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm font-semibold">
-                {q ? "No hay coincidencias" : "Aún no hay registros"}
+                {q || activeFilterCount
+                  ? "No hay coincidencias"
+                  : "Aún no hay registros"}
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                {q
-                  ? "Cambia la búsqueda o vuelve a la primera página."
+                {q || activeFilterCount
+                  ? "Cambia la búsqueda o los filtros."
                   : "Usa el botón de registro para comenzar."}
               </p>
             </div>
@@ -662,7 +651,7 @@ export default async function ManagementPage({
               {page > 1 && (
                 <Link
                   className="text-primary"
-                  href={`${base}?accion=${mode}&pagina=${page - 1}&q=${encodeURIComponent(q)}${filterSuffix}`}
+                  href={`${base}?pagina=${page - 1}&q=${encodeURIComponent(q)}${filterSuffix}`}
                 >
                   Anterior
                 </Link>
@@ -670,7 +659,7 @@ export default async function ManagementPage({
               {page * 25 < listing.total && (
                 <Link
                   className="text-primary"
-                  href={`${base}?accion=${mode}&pagina=${page + 1}&q=${encodeURIComponent(q)}${filterSuffix}`}
+                  href={`${base}?pagina=${page + 1}&q=${encodeURIComponent(q)}${filterSuffix}`}
                 >
                   Siguiente
                 </Link>
@@ -679,14 +668,14 @@ export default async function ManagementPage({
           </div>
         </Card>
       )}
-      {editing && mode !== "eliminar" && (
+      {editing && (
         <Card className="p-5 sm:p-7">
           <ManagementForm
             key={`${seccion}-${id || "nuevo"}-${defaults.version || ""}-${selectedStudent}-${teacherFilter}-${courseFilter}`}
             section={seccion}
             defaults={defaults}
             fields={fields}
-            cancelHref={`${base}?accion=${mode}`}
+            cancelHref={base}
             submitLabel={id ? "Guardar cambios" : "Registrar"}
           />
           <p className="mt-5 text-xs leading-6 text-muted-foreground">
@@ -702,9 +691,27 @@ export default async function ManagementPage({
                     ? "La fecha debe pertenecer al año del curso. Para retirar o finalizar, indica la fecha de salida. Para trasladar, cierra la matrícula anterior y registra otra sin superponer fechas."
                     : "La ficha se puede desactivar conservando sus relaciones e historial. Registrar una ficha no crea una cuenta de inicio de sesión."}
           </p>
+          {id && (seccion === "docentes" || seccion === "cursos") && (
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button asChild variant="outline">
+                <Link
+                  href={`/panel/gestion/asignaciones?${seccion === "docentes" ? "docente" : "curso"}=${id}`}
+                >
+                  Ver asignaciones
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link
+                  href={`/panel/gestion/asignaciones?nuevo=1&${seccion === "docentes" ? "docente" : "curso"}=${id}`}
+                >
+                  Asignar materia
+                </Link>
+              </Button>
+            </div>
+          )}
         </Card>
       )}
-      {relations && mode === "editar" && (
+      {relations && (
         <div className="mt-6 grid min-w-0 gap-6 xl:grid-cols-2">
           <Card className="min-w-0 p-5 sm:p-7">
             <h2 className="text-lg font-semibold">Tutores vinculados</h2>
@@ -811,40 +818,52 @@ export default async function ManagementPage({
               </p>
             )}
           </Card>
-          <Card className="min-w-0 p-5 sm:p-7">
-            <EnrolmentPanel studentId={id} />
+          <Card className="p-5 sm:p-7">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Matrículas</h2>
+              {defaults.activo === "on" && (
+                <Button asChild size="sm">
+                  <Link
+                    href={`/panel/gestion/matriculas?nuevo=1&estudiante=${id}`}
+                  >
+                    <Plus size={14} />
+                    Matricular
+                  </Link>
+                </Button>
+              )}
+            </div>
+            <ul className="mt-5 space-y-3">
+              {relations.enrolments.map((m) => (
+                <li
+                  key={m.id}
+                  className="rounded-lg border border-border p-3 text-sm"
+                >
+                  <p className="font-medium">
+                    {m.cursos
+                      ? `${m.cursos.grado_id}° ${m.cursos.paralelo}`
+                      : "Curso"}{" "}
+                    · {m.cursos?.gestiones?.anio}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {m.estado} · Ingreso {m.fecha_ingreso}
+                    {m.fecha_salida ? ` · Salida ${m.fecha_salida}` : ""}
+                  </p>
+                  <Link
+                    className="mt-2 inline-block text-xs text-primary"
+                    href={`/panel/gestion/matriculas?id=${m.id}`}
+                  >
+                    Editar matrícula
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {!relations.enrolments.length && (
+              <p className="mt-5 text-sm text-muted-foreground">
+                Aún no tiene matrículas.
+              </p>
+            )}
           </Card>
         </div>
-      )}
-      {id &&
-        seccion === "docentes" &&
-        mode === "editar" &&
-        defaults.activo === "on" && <TeacherAssignmentPanel teacherId={id} />}
-      {id && mode === "eliminar" && (
-        <OperationForm action={deleteRecord} label="Eliminar registro" danger>
-          <h2 className="text-lg font-semibold">
-            {[
-              defaults.nombres,
-              defaults.apellido_paterno,
-              defaults.apellido_materno,
-            ]
-              .filter(Boolean)
-              .join(" ") || managementLabels[seccion]}
-          </h2>
-          <p>
-            Revisa el registro seleccionado antes de confirmar. Si tiene datos
-            relacionados, la eliminación será rechazada para conservar el
-            historial.
-          </p>
-          <input
-            type="hidden"
-            name="table"
-            value={
-              seccion === "asignaciones" ? "asignaciones_docente" : seccion
-            }
-          />
-          <input type="hidden" name="id" value={id} />
-        </OperationForm>
       )}
     </PanelShell>
   );

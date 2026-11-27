@@ -39,7 +39,10 @@ async function course(page: Page, parallel: string) {
   await page.getByLabel("Paralelo *", { exact: true }).fill(parallel);
   await page.getByRole("button", { name: "Registrar", exact: true }).click();
   await saved(page);
-  return new URL(page.url()).searchParams.get("id")!;
+  const savedUrl = new URL(page.url());
+  const id = savedUrl.searchParams.get("registro")!;
+  await page.goto(`${savedUrl.pathname}?id=${id}`);
+  return id;
 }
 async function student(
   page: Page,
@@ -52,6 +55,12 @@ async function student(
   await page.getByLabel("Apellido paterno", { exact: true }).fill("Prueba");
   await page.getByRole("button", { name: "Registrar", exact: true }).click();
   await saved(page);
+  {
+    const savedUrl = new URL(page.url());
+    await page.goto(
+      `${savedUrl.pathname}?id=${savedUrl.searchParams.get("registro")}`,
+    );
+  }
   if (parent) {
     await pick(page, "Tutor", "Cuenta", "Cuenta ficticia Prueba");
     await page.getByLabel("Parentesco").fill("Tutor");
@@ -71,7 +80,7 @@ async function student(
 async function sheet(page: Page, id: string) {
   await page.goto(`/panel/asistencia/registro?curso=${id}&fecha=${date}`);
   await expect(
-    page.getByRole("heading", { name: "Registro de asistencia." }),
+    page.getByRole("heading", { name: "Registrar asistencia." }),
   ).toBeVisible();
 }
 async function draft(page: Page) {
@@ -153,6 +162,7 @@ test("docente asignado publica y Padre consulta solamente marcas publicadas", as
   await login(page, "docente@example.invalid");
   await page.goto("/panel/asistencia");
   await page
+    .getByRole("main")
     .getByRole("link", { name: "Registrar asistencia", exact: true })
     .click();
   await sheet(page, c);

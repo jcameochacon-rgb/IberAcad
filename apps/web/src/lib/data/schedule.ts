@@ -37,3 +37,18 @@ export async function loadScheduleSheet(
     };
   return { sheet: data as unknown as ScheduleSheet };
 }
+
+export async function loadInstitutionSchedule() {
+  const { supabase } = await requireProfile();
+  const { data } = await supabase
+    .from("configuracion")
+    .select("turno,hora_ingreso,hora_salida")
+    .maybeSingle();
+  if (!data) return null;
+  const hhmm = (t: string) => t.slice(0, 5);
+  return {
+    turno: data.turno === "TARDE" ? "Turno tarde" : data.turno,
+    ingreso: hhmm(data.hora_ingreso),
+    salida: hhmm(data.hora_salida),
+  };
+}

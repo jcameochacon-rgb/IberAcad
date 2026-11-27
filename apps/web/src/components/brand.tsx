@@ -4,7 +4,7 @@ export function Brand({ dark = false }: { dark?: boolean }) {
   return (
     <div
       className={cn(
-        "w-[220px] max-w-full min-w-0",
+        "w-[188px] max-w-full min-w-0",
         dark && "rounded-xl bg-white p-2 shadow-sm",
       )}
     >

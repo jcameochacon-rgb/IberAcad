@@ -25,11 +25,10 @@ function form(rows: unknown = [row]) {
   return f;
 }
 describe("registro de asistencia", () => {
-  it("permite captura administrativa y docente", () => {
+  it("limita captura a Dirección y Docente", () => {
     expect(canRecordAttendance("DIRECTOR")).toBe(true);
     expect(canRecordAttendance("DOCENTE")).toBe(true);
-    expect(canRecordAttendance("SECRETARIA")).toBe(true);
-    for (const r of ["PADRE", "ESTUDIANTE"] as const)
+    for (const r of ["SECRETARIA", "PADRE", "ESTUDIANTE"] as const)
       expect(canRecordAttendance(r)).toBe(false);
   });
   it("rechaza fechas inexistentes", () => {

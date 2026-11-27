@@ -24,6 +24,7 @@ export async function loadPanel(): Promise<PanelModel> {
     calificaciones: { ...labels.calificaciones, rows: [], total: 0 },
     asistencia: { ...labels.asistencia, rows: [], total: 0 },
     horarios: { ...labels.horarios, rows: [], total: 0 },
+    comunicados: { ...labels.comunicados, rows: [], total: 0 },
   };
   if (!year)
     return {
@@ -36,6 +37,7 @@ export async function loadPanel(): Promise<PanelModel> {
       publishedGrades: 0,
       attendanceCount: 0,
       listings: empty,
+      notices: [],
       terms: [],
     };
   // Cliente con sesión del usuario y clave publicable. Ninguna consulta usa service_role.
@@ -45,6 +47,7 @@ export async function loadPanel(): Promise<PanelModel> {
     grades,
     attendance,
     schedules,
+    notices,
     assignments,
     subjects,
     enrolments,
@@ -94,6 +97,11 @@ export async function loadPanel(): Promise<PanelModel> {
       .order("dia_semana")
       .limit(100),
     supabase
+      .from("comunicados")
+      .select("id,titulo,contenido,estado,publicado_at", { count: "exact" })
+      .order("publicado_at", { ascending: false, nullsFirst: false })
+      .limit(100),
+    supabase
       .from("asignaciones_docente")
       .select("id,asignatura_id")
       .eq("gestion_id", year.id)
@@ -136,6 +144,7 @@ export async function loadPanel(): Promise<PanelModel> {
     grades,
     attendance,
     schedules,
+    notices,
     assignments,
     subjects,
     enrolments,
@@ -220,6 +229,8 @@ export async function loadPanel(): Promise<PanelModel> {
           term: `${terms.data?.find((t) => t.id === c.trimestre_id)?.numero || "—"}°`,
           grade: c.nota_final,
           status: c.situacion,
+          // No es una columna visible: identifica los borradores eliminables.
+          publication: c.estado,
         },
         tone: gradeTone(c.situacion),
       })),
@@ -270,7 +281,19 @@ export async function loadPanel(): Promise<PanelModel> {
         };
       }),
     },
-
+    comunicados: {
+      ...labels.comunicados,
+      total: notices.count || 0,
+      rows: (notices.data || []).map((n) => ({
+        id: n.id,
+        cells: {
+          title: n.titulo,
+          date: displayDate(n.publicado_at),
+          status: n.estado,
+        },
+        tone: n.estado === "PUBLICADO" ? "success" : "warning",
+      })),
+    },
   };
   return {
     role: profile.rol,
@@ -282,7 +305,15 @@ export async function loadPanel(): Promise<PanelModel> {
     publishedGrades: publishedCount.count || 0,
     attendanceCount: attendanceCount.count || 0,
     listings,
-
+    notices: (notices.data || [])
+      .filter((n) => n.estado === "PUBLICADO")
+      .slice(0, 4)
+      .map((n) => ({
+        id: n.id,
+        title: n.titulo,
+        content: n.contenido,
+        date: n.publicado_at,
+      })),
     terms: (terms.data || []).map((t) => ({
       number: t.numero,
       state: t.estado,

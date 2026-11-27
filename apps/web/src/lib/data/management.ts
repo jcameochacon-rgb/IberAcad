@@ -14,6 +14,7 @@ export const managementLabels = {
   matriculas: "Matrículas",
   docentes: "Docentes",
   asignaciones: "Asignaciones",
+  asignaturas: "Asignaturas",
 };
 export type Person = {
   nombres: string;
@@ -37,19 +38,23 @@ function check<T extends { error: unknown }>(value: T): T {
     throw new Error("No se pudieron consultar los registros de gestión.");
   return value;
 }
+/** Filtros de las listas de gestión (todos opcionales y ya validados). */
+export type ManagementFilters = {
+  curso?: string;
+  docente?: string;
+  gestion?: string;
+  asignatura?: string;
+  grado?: string;
+  estado?: string;
+};
+const activeFilter = (estado?: string) =>
+  estado === "activo" ? true : estado === "inactivo" ? false : null;
+
 export async function loadManagement(
   section: ManagementSection,
   query: string,
   page: number,
-  filters: {
-    curso?: string;
-    docente?: string;
-    estado?: string;
-    campo?: string;
-    grado?: string;
-    gestion?: string;
-    genero?: string;
-  } = {},
+  filters: ManagementFilters = {},
 ): Promise<Listing | null> {
   const { supabase, profile } = await requireProfile();
   if (!canManage(profile.rol)) return null;
@@ -66,48 +71,14 @@ export async function loadManagement(
       .order("created_at", { ascending: false })
       .order("id")
       .range(from, from + 24);
-    if (["activo", "inactivo"].includes(filters.estado || ""))
-      request = request.eq("activo", filters.estado === "activo");
-    if (
-      section === "estudiantes" &&
-      ["M", "F", "NO_ESPECIFICADO"].includes(filters.genero || "")
-    )
-      request = request.filter("genero", "eq", filters.genero!);
-    if (term) {
-      if (section === "estudiantes" && filters.campo === "rude")
-        request = request.ilike("rude", `%${term}%`);
-      else if (section === "docentes" && filters.campo === "especialidad")
-        request = request.ilike("especialidad", `%${term}%`);
-      else {
-        for (const token of term.split(/\s+/).filter(Boolean))
-          request = request.or(
-            `nombres.ilike.%${token}%,apellido_paterno.ilike.%${token}%,apellido_materno.ilike.%${token}%,ci.ilike.%${token}%,telefono.ilike.%${token}%`,
-            { referencedTable: "personas" },
-          );
-      }
-    }
-    const result = check(await request);
-    const coursesByStudent = new Map<string, string[]>();
-    if (section === "estudiantes" && result.data?.length) {
-      const enrolments = check(
-        await supabase
-          .from("matriculas")
-          .select("estudiante_id,cursos(grado_id,paralelo,gestiones(anio))")
-          .in(
-            "estudiante_id",
-            result.data.map((r) => r.id),
-          )
-          .eq("estado", "ACTIVA"),
+    if (term)
+      request = request.or(
+        `nombres.ilike.%${term}%,apellido_paterno.ilike.%${term}%,apellido_materno.ilike.%${term}%`,
+        { referencedTable: "personas" },
       );
-      for (const row of enrolments.data || []) {
-        if (!row.cursos) continue;
-        const label = `${row.cursos.grado_id}° ${row.cursos.paralelo} · ${row.cursos.gestiones?.anio || "—"}`;
-        coursesByStudent.set(row.estudiante_id, [
-          ...(coursesByStudent.get(row.estudiante_id) || []),
-          label,
-        ]);
-      }
-    }
+    const active = activeFilter(filters.estado);
+    if (active !== null) request = request.eq("activo", active);
+    const result = check(await request);
     const listing: Listing = {
       title: managementLabels[section],
       description: "Fichas activas e inactivas.",
@@ -123,19 +94,6 @@ export async function loadManagement(
                 : "Tutor",
         },
         { key: "ci", label: "CI" },
-        { key: "phone", label: "Teléfono" },
-        { key: "address", label: "Dirección" },
-        ...(section === "estudiantes"
-          ? [
-              { key: "rude", label: "RUDE" },
-              { key: "course", label: "Matrícula activa / gestión" },
-              { key: "birth", label: "Nacimiento" },
-              { key: "gender", label: "Género" },
-            ]
-          : []),
-        ...(section === "docentes"
-          ? [{ key: "specialty", label: "Especialidad" }]
-          : []),
         { key: "status", label: "Estado" },
       ],
       rows: (result.data || []).map((r) => ({
@@ -143,14 +101,6 @@ export async function loadManagement(
         cells: {
           name: fullName(r.personas),
           ci: r.personas.ci,
-          course:
-            coursesByStudent.get(r.id)?.join("; ") || "Sin matrícula activa",
-          phone: r.personas.telefono,
-          address: r.personas.direccion,
-          rude: "rude" in r ? r.rude : null,
-          birth: "fecha_nacimiento" in r ? r.fecha_nacimiento : null,
-          gender: "genero" in r ? r.genero : null,
-          specialty: "especialidad" in r ? r.especialidad : null,
           status: r.activo ? "Activo" : "Inactivo",
         },
       })),
@@ -172,10 +122,14 @@ export async function loadManagement(
         `nombres.ilike.%${term}%,apellido_paterno.ilike.%${term}%,apellido_materno.ilike.%${term}%`,
         { referencedTable: "docentes.personas" },
       );
-    if (["activo", "inactivo"].includes(filters.estado || ""))
-      request = request.eq("activo", filters.estado === "activo");
     if (filters.curso) request = request.eq("curso_id", filters.curso);
     if (filters.docente) request = request.eq("docente_id", filters.docente);
+    if (filters.gestion) request = request.eq("gestion_id", filters.gestion);
+    if (filters.asignatura)
+      request = request.eq("asignatura_id", filters.asignatura);
+    const activeAssignment = activeFilter(filters.estado);
+    if (activeAssignment !== null)
+      request = request.eq("activo", activeAssignment);
     const result = check(await request);
     return {
       title: "Asignaciones",
@@ -200,6 +154,35 @@ export async function loadManagement(
       })),
     };
   }
+  if (section === "asignaturas") {
+    let request = supabase
+      .from("asignaturas")
+      .select("*", { count: "exact" })
+      .order("nombre")
+      .range(from, from + 24);
+    if (term) request = request.ilike("nombre", `%${term}%`);
+    const activeSubject = activeFilter(filters.estado);
+    if (activeSubject !== null) request = request.eq("activo", activeSubject);
+    const result = check(await request);
+    return {
+      title: "Asignaturas",
+      description: "Catálogo de materias del colegio.",
+      total: result.count || 0,
+      columns: [
+        { key: "name", label: "Materia" },
+        { key: "description", label: "Descripción" },
+        { key: "status", label: "Estado" },
+      ],
+      rows: (result.data || []).map((r) => ({
+        id: r.id,
+        cells: {
+          name: r.nombre,
+          description: r.descripcion || "",
+          status: r.activo ? "Activa" : "Inactiva",
+        },
+      })),
+    } satisfies Listing;
+  }
   if (section === "cursos") {
     let request = supabase
       .from("cursos")
@@ -209,11 +192,10 @@ export async function loadManagement(
       .order("paralelo")
       .range(from, from + 24);
     if (term) request = request.ilike("paralelo", `%${term}%`);
-    if (["activo", "inactivo"].includes(filters.estado || ""))
-      request = request.eq("activo", filters.estado === "activo");
-    if (/^[1-6]$/.test(filters.grado || ""))
-      request = request.eq("grado_id", Number(filters.grado));
     if (filters.gestion) request = request.eq("gestion_id", filters.gestion);
+    if (filters.grado) request = request.eq("grado_id", Number(filters.grado));
+    const activeCourse = activeFilter(filters.estado);
+    if (activeCourse !== null) request = request.eq("activo", activeCourse);
     const result = check(await request);
     return {
       title: "Cursos",
@@ -237,7 +219,7 @@ export async function loadManagement(
   let request = supabase
     .from("matriculas")
     .select(
-      "*,estudiantes!inner(personas!inner(nombres,apellido_paterno,apellido_materno)),cursos(grado_id,paralelo,gestiones(anio))",
+      "*,estudiantes!inner(personas!inner(nombres,apellido_paterno,apellido_materno)),cursos!inner(grado_id,paralelo,gestion_id,gestiones(anio))",
       { count: "exact" },
     )
     .order("updated_at", { ascending: false })
@@ -248,12 +230,14 @@ export async function loadManagement(
       `nombres.ilike.%${term}%,apellido_paterno.ilike.%${term}%,apellido_materno.ilike.%${term}%`,
       { referencedTable: "estudiantes.personas" },
     );
-  if (["ACTIVA", "RETIRADA", "FINALIZADA"].includes(filters.estado || ""))
-    request = request.eq(
-      "estado",
-      filters.estado as "ACTIVA" | "RETIRADA" | "FINALIZADA",
-    );
   if (filters.curso) request = request.eq("curso_id", filters.curso);
+  if (filters.gestion)
+    request = request.eq("cursos.gestion_id", filters.gestion);
+  if (
+    filters.estado &&
+    ["ACTIVA", "RETIRADA", "FINALIZADA"].includes(filters.estado)
+  )
+    request = request.eq("estado", filters.estado as "ACTIVA");
   const result = check(await request);
   return {
     title: "Matrículas",
@@ -263,8 +247,6 @@ export async function loadManagement(
       { key: "student", label: "Estudiante" },
       { key: "course", label: "Curso" },
       { key: "year", label: "Gestión" },
-      { key: "entry", label: "Ingreso" },
-      { key: "exit", label: "Salida" },
       { key: "status", label: "Estado" },
     ],
     rows: (result.data || []).map((r) => ({
@@ -273,8 +255,6 @@ export async function loadManagement(
         student: fullName(r.estudiantes.personas),
         course: r.cursos ? `${r.cursos.grado_id}° ${r.cursos.paralelo}` : "—",
         year: r.cursos?.gestiones?.anio || "—",
-        entry: r.fecha_ingreso,
-        exit: r.fecha_salida,
         status: r.estado,
       },
     })),
@@ -328,6 +308,24 @@ export async function loadRecord(
     if ("especialidad" in r)
       Object.assign(defaults, { especialidad: r.especialidad || "" });
     return pack(defaults, r);
+  }
+  if (section === "asignaturas") {
+    if (!id) return pack({ activo: "on" }, null);
+    const r = check(
+      await supabase.from("asignaturas").select("*").eq("id", id).maybeSingle(),
+    ).data;
+    return r
+      ? pack(
+          {
+            id: r.id,
+            version: r.updated_at,
+            nombre: r.nombre,
+            descripcion: r.descripcion || "",
+            activo: r.activo ? "on" : "",
+          },
+          r,
+        )
+      : null;
   }
   if (section === "asignaciones") {
     if (!id) return pack({ activo: "on" }, null);
@@ -463,4 +461,40 @@ export async function assignmentHasRecords(id: string) {
   );
   results.forEach(check);
   return results.some((r) => (r.count || 0) > 0);
+}
+
+/** Opciones para los filtros desplegables de las listas de gestión. */
+export async function loadFilterOptions() {
+  const { supabase, profile } = await requireProfile();
+  if (!canManage(profile.rol))
+    return { years: [], courses: [], teachers: [], subjects: [] };
+  const [years, courses, teachers, subjects] = await Promise.all([
+    supabase
+      .from("gestiones")
+      .select("id,anio")
+      .order("anio", { ascending: false })
+      .limit(50),
+    supabase
+      .from("cursos")
+      .select("id,grado_id,paralelo,gestiones(anio)")
+      .order("grado_id")
+      .order("paralelo")
+      .limit(300),
+    supabase
+      .from("docentes")
+      .select("id,personas!inner(nombres,apellido_paterno,apellido_materno)")
+      .limit(300),
+    supabase.from("asignaturas").select("id,nombre").order("nombre").limit(300),
+  ]);
+  return {
+    years: (years.data || []).map((y) => ({ id: y.id, label: String(y.anio) })),
+    courses: (courses.data || []).map((c) => ({
+      id: c.id,
+      label: `${c.grado_id}° ${c.paralelo}${c.gestiones?.anio ? ` · ${c.gestiones.anio}` : ""}`,
+    })),
+    teachers: (teachers.data || [])
+      .map((t) => ({ id: t.id, label: fullName(t.personas) }))
+      .sort((a, b) => a.label.localeCompare(b.label, "es")),
+    subjects: (subjects.data || []).map((a) => ({ id: a.id, label: a.nombre })),
+  };
 }

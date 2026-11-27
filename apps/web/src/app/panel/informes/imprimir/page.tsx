@@ -17,7 +17,7 @@ export default async function PrintPage({
         <Link className="text-sm underline" href={`/panel/informes?${params}`}>
           Volver al informe
         </Link>
-        {result.report && <PrintReport report={result.report} />}
+        {result.report && <PrintReport />}
       </div>
       {result.report ? (
         <ReportTable report={result.report} />

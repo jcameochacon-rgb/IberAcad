@@ -13,26 +13,6 @@ const login = async (
     .getByRole("button", { name: "Iniciar sesión", exact: true })
     .click();
 };
-test("login compacto mantiene el formulario visible en móvil", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/login");
-  await expect(
-    page.getByRole("heading", { name: "Inicia sesión", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Iniciar sesión", exact: true }),
-  ).toBeInViewport();
-  await expect(
-    page.getByRole("link", { name: "Olvidé mi contraseña", exact: true }),
-  ).toBeInViewport();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
-  ).toBe(true);
-});
 test("rutas privadas exigen sesión y no permiten acceso con cookie falsificada", async ({
   page,
   context,
@@ -83,7 +63,7 @@ test("login con sesión simulada abre un dashboard vacío y logout cierra el acc
   await login(page);
   await expect(page).toHaveURL(/\/panel$/);
   await expect(
-    page.getByRole("heading", { name: "Visión institucional" }),
+    page.getByRole("heading", { name: "Tu escuela, en perspectiva." }),
   ).toBeVisible();
   await expect(
     page.getByText("Dirección ficticia Prueba", { exact: true }),
@@ -123,6 +103,9 @@ test("demo permite cambiar rol y buscar únicamente entre sus datos ficticios", 
   ).toBeVisible();
   await page.getByLabel("Ver como").selectOption("PADRE");
   await expect(page).toHaveURL(/rol=PADRE/);
+  await page
+    .getByRole("button", { name: "Registro de Estudiantes", exact: true })
+    .click();
   await page.getByRole("link", { name: "Mis hijos", exact: true }).click();
   await expect(page.getByRole("table")).toContainText("Lucía Ejemplo");
   await expect(page.getByRole("table")).not.toContainText("Daniel Ejemplo");
@@ -161,7 +144,13 @@ test("menú y tabla funcionan en pantalla móvil sin desbordar la página", asyn
   ).toBe(true);
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await expect(page.getByRole("navigation")).toBeVisible();
-  await page.getByRole("link", { name: "Asistencia", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Control de Asistencia", exact: true })
+    .click();
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "Consultar asistencia", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Asistencia." }),
   ).toBeVisible();

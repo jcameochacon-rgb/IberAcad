@@ -6,6 +6,9 @@ export const dynamic = "force-dynamic";
 export default function Recover() {
   return (
     <AuthShell>
+      <p className="mb-3 text-xs font-bold uppercase tracking-[.18em] text-primary">
+        Bienvenidos a IberAcad
+      </p>
       <h2 className="text-3xl font-semibold tracking-tight">
         Recupera tu acceso
       </h2>

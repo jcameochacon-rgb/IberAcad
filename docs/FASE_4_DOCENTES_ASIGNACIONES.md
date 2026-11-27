@@ -1,6 +1,6 @@
 # Fase 4: docentes y asignación de materias
 
-Versión 0.4, 6 de octubre de 2026. La web incorpora Docentes y Asignaciones dentro de Gestión académica. Dirección y Secretaría gestionan los registros; los docentes conservan únicamente su alcance autorizado por Supabase. En v0.11, abre **Gestión de Cursos → Asignación de materias** para administrar esas relaciones.
+Versión 0.4, 6 de octubre de 2026. La web incorpora Docentes y Asignaciones dentro de Gestión académica. Dirección y Secretaría gestionan los registros; los docentes conservan únicamente su alcance autorizado por Supabase.
 
 ## Actualizar desde v0.3
 
@@ -24,7 +24,7 @@ Una persona solo tiene una ficha de docente; CI no se puede duplicar cuando se r
 ## Asignar materias
 
 1. Crea el curso si aún no existe.
-2. Abre **Gestión de Cursos → Asignación de materias → Registrar**.
+2. Desde la ficha del docente o del curso pulsa **Asignar materia**; también puedes usar **Asignaciones → Nueva asignación**.
 3. Busca y selecciona docente, curso y materia. El curso muestra su grado, paralelo y gestión. El catálogo incluye las nueve materias de la base inicial; esta fase no añade edición del catálogo.
 4. Conserva Asignación activa marcada y pulsa Registrar.
 5. Abre **Ver asignaciones** desde el docente o curso para consultar su lista. La búsqueda usa nombres/apellidos del docente; los filtros por docente/curso se conservan al buscar y paginar.
@@ -51,7 +51,7 @@ Registrar la ficha no crea una cuenta Auth. Para la primera conexión de cada do
 4. Ejecuta completo ese archivo desde SQL Editor. Vincula la cuenta existente con esa persona y el rol DOCENTE; rechaza sobrescribir perfiles previos.
 5. Inicia sesión en otra ventana privada con la cuenta docente. Debe ver sus cursos; estudiantes aparecen cuando tienen matrícula en esos cursos. Un docente ajeno no obtiene acceso.
 
-El modelo actual admite una cuenta y un rol institucional por persona. Si ya tiene un perfil PADRE u otro rol, el script exige revisar ese caso; no lo convierte automáticamente en DOCENTE. En v0.11, las cuentas se administran desde **Gestión de usuarios**; los accesos familiares requieren una ficha activa de tutor y el personal administrativo usa el rol existente SECRETARIA.
+El modelo actual admite una cuenta y un rol institucional por persona. Si ya tiene un perfil PADRE u otro rol, el script exige revisar ese caso; no lo convierte automáticamente en DOCENTE. La administración web de cuentas y múltiples roles están fuera de esta fase.
 
 ## Verificación y límites
 

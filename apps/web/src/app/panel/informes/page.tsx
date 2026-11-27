@@ -1,9 +1,5 @@
-import { PrintReport } from "@/components/print-report";
-import { CrudHeading } from "@/components/crud-heading";
-import { readAction, allowedActions } from "@/lib/workspace-navigation";
-import { notFound } from "next/navigation";
-import { SavedReports } from "@/components/saved-reports";
 import Link from "next/link";
+import { PageTitle } from "@/components/page-title";
 import { requireProfile } from "@/lib/auth";
 import { loadPanel } from "@/lib/data/live";
 import { loadScheduleCourses } from "@/lib/data/schedule";
@@ -12,6 +8,8 @@ import { PanelShell } from "@/components/panel-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ReportTable } from "@/components/report-table";
+import { SaveCurrentReport } from "@/components/saved-reports";
+import { loadSavedReports } from "@/lib/data/saved-reports";
 const field =
   "mt-2 h-12 w-full rounded-lg border border-input bg-background px-3 text-sm";
 export default async function ReportsPage({
@@ -25,19 +23,6 @@ export default async function ReportsPage({
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(await searchParams))
     if (typeof v === "string") params.set(k, v);
-  const mode = readAction(params.get("accion"));
-  if (!allowedActions(model.role, "informes").includes(mode)) notFound();
-  if (mode === "editar" || mode === "eliminar")
-    return (
-      <PanelShell model={model} current="informes">
-        <CrudHeading module="informes" action={mode} />
-        <SavedReports
-          mode={mode}
-          params={params.toString()}
-          id={params.get("id") || undefined}
-        />
-      </PanelShell>
-    );
   const terms = await supabase
     .from("trimestres")
     .select("id,numero,gestiones(anio)")
@@ -45,9 +30,24 @@ export default async function ReportsPage({
     .limit(501);
   const optionsError = !!terms.error || (terms.data?.length || 0) > 500;
   const result = params.has("curso") ? await loadReport(params) : null;
+  const { available: savedAvailable, reports: savedReports } =
+    await loadSavedReports();
+  const openId = params.get("guardado") || "";
+  const openReport = savedReports.find((r) => r.id === openId);
+  const reportQuery = new URLSearchParams(params);
+  reportQuery.delete("guardado");
   return (
     <PanelShell model={model} current="informes">
-      <CrudHeading module="informes" action={mode} />
+      <div className="mb-7">
+        <p className="mb-2 text-xs text-muted-foreground">
+          Consulta y exportación
+        </p>
+        <PageTitle fallback="Generar informe/reporte" />
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+          Consulta calificaciones publicadas o asistencia por curso. Descarga
+          los resultados o prepara una copia para imprimir.
+        </p>
+      </div>
       <Card className="mb-6 p-5">
         {optionsError ? (
           <p role="alert">
@@ -60,7 +60,9 @@ export default async function ReportsPage({
             method="get"
             className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-3"
           >
-            <input type="hidden" name="accion" value={mode} />
+            {openReport && (
+              <input type="hidden" name="guardado" value={openReport.id} />
+            )}
             <label className="text-sm">
               Tipo de informe
               <select
@@ -126,9 +128,7 @@ export default async function ReportsPage({
                 className={field}
               />
             </label>
-            <Button>
-              {mode === "generar" ? "Generar informe" : "Consultar informe"}
-            </Button>
+            <Button>Generar informe</Button>
             <p className="text-xs leading-6 text-muted-foreground sm:col-span-2 lg:col-span-3">
               Para calificaciones, elige un trimestre de la misma gestión del
               curso. Para asistencia, indica las fechas dentro del año de la
@@ -145,31 +145,43 @@ export default async function ReportsPage({
       {result?.report && (
         <Card className="min-w-0 p-5">
           <div className="mb-6 flex flex-wrap gap-3">
-            <PrintReport
-              report={result.report}
-              csvHref={`/panel/informes/csv?${params}`}
-            />
+            <Button asChild variant="outline">
+              <a href={`/panel/informes/csv?${reportQuery}`}>Descargar CSV</a>
+            </Button>
             <Button asChild>
-              <Link href={`/panel/informes/imprimir?${params}`}>
+              <Link href={`/panel/informes/imprimir?${reportQuery}`}>
                 Preparar impresión / PDF
               </Link>
             </Button>
           </div>
+          <div className="mb-6 rounded-xl border border-border bg-muted/40 p-4">
+            {savedAvailable ? (
+              <SaveCurrentReport
+                params={reportQuery.toString()}
+                openId={openReport?.id}
+                openName={openReport?.nombre}
+              />
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Para guardar informes, ejecuta en Supabase el archivo
+                supabase/migrations/202611270001_ampliacion_modulos.sql.
+              </p>
+            )}
+          </div>
           <ReportTable report={result.report} />
           <p className="mt-5 text-xs leading-6 text-muted-foreground">
-            En el navegador, el CSV vuelve a consultar los datos. En la app se
-            exporta la vista cargada; actualízala antes si hubo cambios. Se
-            exportan todas las filas del informe, hasta 5000.
+            La descarga y la impresión vuelven a consultar los datos; pueden
+            reflejar publicaciones o retiros posteriores a esta vista. Se
+            exportan todas las filas del informe, hasta 5000, sin truncarlas.
           </p>
         </Card>
       )}
       {!result && (
-        <Card className="p-8 text-sm text-muted-foreground">
+        <Card className="mt-6 p-8 text-sm text-muted-foreground">
           Selecciona los filtros para generar tu primer informe. La consulta no
           modifica calificaciones ni asistencia.
         </Card>
       )}
-      <SavedReports mode={mode} params={params.toString()} />
     </PanelShell>
   );
 }

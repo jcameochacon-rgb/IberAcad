@@ -1,7 +1,5 @@
-import { CrudHeading } from "@/components/crud-heading";
-import { readAction } from "@/lib/workspace-navigation";
-import { AcademicDelete } from "@/components/academic-delete";
 import Link from "next/link";
+import { PageTitle } from "@/components/page-title";
 import { requireProfile } from "@/lib/auth";
 import { loadPanel } from "@/lib/data/live";
 import { loadGradeOptions, loadGradeSheet } from "@/lib/data/grades";
@@ -33,21 +31,8 @@ export default async function GradeRegister({
         </Card>
       </PanelShell>
     );
-  const p = await searchParams;
-  const mode = readAction(p.accion, "registrar");
-  if (mode === "eliminar")
-    return (
-      <PanelShell model={model} current="calificaciones">
-        <CrudHeading module="calificaciones" action="eliminar" />
-        <AcademicDelete
-          model={model}
-          tipo="calificaciones"
-          selectedId={typeof p.id === "string" ? p.id : undefined}
-        />
-      </PanelShell>
-    );
-  const text = (k: string) =>
-    typeof p[k] === "string" ? (p[k] as string) : "";
+  const p = await searchParams,
+    text = (k: string) => (typeof p[k] === "string" ? (p[k] as string) : "");
   const options = await loadGradeOptions(),
     assignment = options.assignments.find((a) => a.id === text("asignacion"));
   const terms = options.terms.filter(
@@ -73,14 +58,27 @@ export default async function GradeRegister({
   };
   return (
     <PanelShell model={model} current="calificaciones">
-      <CrudHeading module="calificaciones" action={mode} />
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Evaluación trimestral · Dirección y docentes
+          </p>
+          <PageTitle fallback="Registro de calificaciones" />
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Configura las actividades de cada materia. Guarda las notas por
+            estudiante y publícalas cuando estén completas.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/panel/calificaciones">Ver calificaciones</Link>
+        </Button>
+      </div>
       <Card className="mb-5 p-5">
         <form
           method="get"
           action="/panel/calificaciones/registro"
           className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
         >
-          <input type="hidden" name="accion" value={mode} />
           <div>
             <label htmlFor="asignacion" className="mb-2 block text-sm">
               Curso y materia
@@ -116,7 +114,6 @@ export default async function GradeRegister({
             action="/panel/calificaciones/registro"
             className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
           >
-            <input type="hidden" name="accion" value={mode} />
             <input type="hidden" name="asignacion" value={assignment.id} />
             <div>
               <label htmlFor="trimestre" className="mb-2 block text-sm">
@@ -196,7 +193,6 @@ export default async function GradeRegister({
               action="/panel/calificaciones/registro"
               className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
             >
-              <input type="hidden" name="accion" value={mode} />
               <input
                 type="hidden"
                 name="asignacion"

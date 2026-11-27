@@ -6,6 +6,9 @@ export default async function Update() {
   await requireIdentity();
   return (
     <AuthShell>
+      <p className="mb-3 text-xs font-bold uppercase tracking-[.18em] text-primary">
+        Bienvenidos a IberAcad
+      </p>
       <h2 className="text-3xl font-semibold tracking-tight">
         Tu nueva contraseña
       </h2>

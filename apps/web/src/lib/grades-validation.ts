@@ -36,7 +36,7 @@ export type GradeSheet = {
 };
 export type GradeState = { error?: string };
 export const canRecordGrades = (role: string) =>
-  role === "DIRECTOR" || role === "SECRETARIA" || role === "DOCENTE";
+  role === "DIRECTOR" || role === "DOCENTE";
 export const gradeId = (v: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 export function gradeNumber(

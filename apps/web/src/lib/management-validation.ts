@@ -7,6 +7,7 @@ export const managementSections = [
   "matriculas",
   "docentes",
   "asignaciones",
+  "asignaturas",
 ] as const;
 export type ManagementSection = (typeof managementSections)[number];
 export type OptionKind =
@@ -23,6 +24,7 @@ export const managementSingular: Record<ManagementSection, string> = {
   matriculas: "matrícula",
   docentes: "docente",
   asignaciones: "asignación",
+  asignaturas: "materia",
 };
 export const managementNewLabel: Record<ManagementSection, string> = {
   estudiantes: "Nuevo estudiante",
@@ -31,6 +33,7 @@ export const managementNewLabel: Record<ManagementSection, string> = {
   matriculas: "Nueva matrícula",
   docentes: "Nuevo docente",
   asignaciones: "Nueva asignación",
+  asignaturas: "Nueva materia",
 };
 export const isManagementSection = (
   value: string,
@@ -96,6 +99,8 @@ const fields = [
   "especialidad",
   "docente_id",
   "asignatura_id",
+  "nombre",
+  "descripcion",
 ];
 export function formValues(form: FormData) {
   return Object.fromEntries(
@@ -156,6 +161,11 @@ export function validateManagement(
       !/^[A-Z]{1,2}$/.test(v.paralelo.toUpperCase())
     )
       return "Selecciona gestión, grado y un paralelo de una o dos letras.";
+  } else if (kind === "asignaturas") {
+    if (!v.nombre || v.nombre.length > 120)
+      return "Ingresa el nombre de la materia (hasta 120 caracteres).";
+    if (v.descripcion.length > 500)
+      return "La descripción admite hasta 500 caracteres.";
   } else if (kind === "asignaciones") {
     if (
       !uuidPattern.test(v.docente_id) ||

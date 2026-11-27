@@ -89,7 +89,7 @@ export function reportCsv(report: Report) {
         report.curso,
         report.gestion,
         report.periodo,
-      new Date(report.generado).toISOString(),
+        new Date(report.generado).toISOString(),
         ...cols.map((c) => row[c[0]]),
       ]),
     ]

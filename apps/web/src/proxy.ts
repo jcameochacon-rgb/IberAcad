@@ -3,6 +3,31 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@iberdrola/shared";
 import { getSupabaseConfig } from "@/lib/env";
 export async function proxy(request: NextRequest) {
+  // Si el correo de recuperación aterriza en la portada (por ejemplo cuando la
+  // dirección de redirección no está autorizada en Supabase), reenvía el código
+  // al flujo de recuperación en lugar de dejar a la persona en la portada.
+  if (request.nextUrl.pathname === "/") {
+    const code = request.nextUrl.searchParams.get("code");
+    const tokenHash = request.nextUrl.searchParams.get("token_hash");
+    if (code && code.length < 2048) {
+      const target = new URL("/auth/callback", request.url);
+      target.searchParams.set("code", code);
+      target.searchParams.set("next", "/actualizar-clave");
+      return NextResponse.redirect(target);
+    }
+    if (
+      tokenHash &&
+      tokenHash.length < 2048 &&
+      request.nextUrl.searchParams.get("type") === "recovery"
+    ) {
+      const target = new URL("/auth/confirm", request.url);
+      target.searchParams.set("token_hash", tokenHash);
+      target.searchParams.set("type", "recovery");
+      target.searchParams.set("next", "/actualizar-clave");
+      return NextResponse.redirect(target);
+    }
+    return NextResponse.next();
+  }
   let response = NextResponse.next({ request });
   const noCache = (r: NextResponse) => {
     r.headers.set("Cache-Control", "private, no-store, max-age=0");
@@ -50,6 +75,7 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
+    "/",
     "/panel/:path*",
     "/login",
     "/actualizar-clave",

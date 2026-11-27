@@ -46,11 +46,10 @@ describe("captura de calificaciones", () => {
     f.set("matricula", "no");
     expect(() => parseGradeForm(f)).toThrow();
   });
-  it("permite captura administrativa y docente", () => {
+  it("limita captura a Dirección y Docente", () => {
     expect(canRecordGrades("DIRECTOR")).toBe(true);
     expect(canRecordGrades("DOCENTE")).toBe(true);
-    expect(canRecordGrades("SECRETARIA")).toBe(true);
-    for (const r of ["PADRE", "ESTUDIANTE", ""])
+    for (const r of ["SECRETARIA", "PADRE", "ESTUDIANTE", ""])
       expect(canRecordGrades(r)).toBe(false);
   });
 });

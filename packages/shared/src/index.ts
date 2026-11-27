@@ -9,8 +9,8 @@ export const roles: readonly Role[] = [
   "ESTUDIANTE",
 ];
 export const roleLabels: Record<Role, string> = {
-  DIRECTOR: "Administrador",
-  SECRETARIA: "Personal administrativo",
+  DIRECTOR: "Dirección",
+  SECRETARIA: "Secretaría",
   DOCENTE: "Docente",
   PADRE: "Padre / tutor",
   ESTUDIANTE: "Estudiante",
@@ -22,14 +22,15 @@ export type Module =
   | "cursos"
   | "calificaciones"
   | "asistencia"
-  | "horarios";
+  | "horarios"
+  | "comunicados";
 export const modules: readonly Module[] = [
   "estudiantes",
   "cursos",
   "calificaciones",
   "asistencia",
   "horarios",
-
+  "comunicados",
 ];
 export const moduleLabels: Record<Module, string> = {
   estudiantes: "Estudiantes",
@@ -37,7 +38,7 @@ export const moduleLabels: Record<Module, string> = {
   calificaciones: "Calificaciones",
   asistencia: "Asistencia",
   horarios: "Horarios",
-
+  comunicados: "Comunicados",
 };
 export const isModule = (value: string): value is Module =>
   modules.some((module) => module === value);

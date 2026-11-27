@@ -15,16 +15,40 @@ export function RecordsTable({
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<Record<string, string>>({});
+  // Valores disponibles de cada columna filtrable, en orden alfabético.
+  const filterColumns = useMemo(
+    () =>
+      listing.columns
+        .filter((col) => col.filter)
+        .map((col) => ({
+          ...col,
+          values: [
+            ...new Set(
+              listing.rows
+                .map((row) => String(row.cells[col.key] ?? ""))
+                .filter(Boolean),
+            ),
+          ].sort((a, b) => a.localeCompare(b, "es", { numeric: true })),
+        }))
+        .filter((col) => col.values.length > 1),
+    [listing.columns, listing.rows],
+  );
+  const activeFilters = Object.values(selected).filter(Boolean).length;
   const filtered = useMemo(
     () =>
-      listing.rows.filter((row) =>
-        Object.values(row.cells).some((value) =>
-          String(value ?? "")
-            .toLocaleLowerCase("es")
-            .includes(search.toLocaleLowerCase("es")),
-        ),
+      listing.rows.filter(
+        (row) =>
+          Object.entries(selected).every(
+            ([key, value]) => !value || String(row.cells[key] ?? "") === value,
+          ) &&
+          Object.values(row.cells).some((value) =>
+            String(value ?? "")
+              .toLocaleLowerCase("es")
+              .includes(search.toLocaleLowerCase("es")),
+          ),
       ),
-    [listing.rows, search],
+    [listing.rows, search, selected],
   );
   const size = compact ? 5 : 10;
   const pages = Math.max(1, Math.ceil(filtered.length / size));
@@ -50,8 +74,52 @@ export function RecordsTable({
               className="h-11 pl-9"
             />
           </div>
-          <span className="text-xs text-muted-foreground">
-            {listing.total} registros disponibles
+          <div className="flex flex-wrap items-center gap-2">
+            {filterColumns.map((col) => (
+              <select
+                key={col.key}
+                id={`f-${col.key}`}
+                aria-label={`Filtrar por ${col.label}`}
+                value={selected[col.key] ?? ""}
+                onChange={(e) => {
+                  setSelected((prev) => ({
+                    ...prev,
+                    [col.key]: e.target.value,
+                  }));
+                  setPage(0);
+                }}
+                className={cn(
+                  "h-11 rounded-lg border border-input bg-background px-3 text-sm",
+                  selected[col.key] && "border-primary text-primary",
+                )}
+              >
+                <option value="">{col.label}: todos</option>
+                {col.values.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            ))}
+            {(activeFilters > 0 || search) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelected({});
+                  setSearch("");
+                  setPage(0);
+                }}
+              >
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground sm:ml-auto">
+            {filtered.length === listing.rows.length
+              ? `${listing.total} registros disponibles`
+              : `${filtered.length} de ${listing.rows.length} registros`}
           </span>
         </div>
       )}

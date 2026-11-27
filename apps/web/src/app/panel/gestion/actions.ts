@@ -20,7 +20,9 @@ function errorMessage(
   if (error.code === "PGRST202" || error.code === "42883")
     return `Falta instalar la migración ${section === "docentes" || section === "asignaciones" ? "202610060002_docentes_asignaciones.sql" : "202610060001_gestion_academica.sql"} en Supabase.`;
   if (error.code === "23505")
-    if (section === "asignaciones")
+    if (section === "asignaturas")
+      return "Ya existe una materia con ese nombre. Búscala para editarla o reactivarla.";
+    else if (section === "asignaciones")
       return "Ese curso ya tiene una asignación para esta materia. Busca la existente para editarla o reactivarla.";
     else if (section === "docentes")
       return "Ya existe ese CI o esa persona ya tiene ficha de docente. Busca la ficha existente o reutiliza sus datos personales.";
@@ -135,6 +137,43 @@ export async function saveRecord(
         p_activo: values.activo === "on",
         p_version: values.version || null,
       });
+    } else if (section === "asignaturas") {
+      const data = {
+        nombre: values.nombre,
+        descripcion: values.descripcion || null,
+        activo: values.activo === "on",
+        updated_at: new Date().toISOString(),
+      };
+      if (values.id) {
+        // Control de cambios simultáneos: solo se guarda sobre la versión leída.
+        const updated = await supabase
+          .from("asignaturas")
+          .update(data)
+          .eq("id", values.id)
+          .eq("updated_at", values.version)
+          .select("id");
+        result = updated.error
+          ? { data: null, error: updated.error }
+          : updated.data?.length
+            ? { data: values.id, error: null }
+            : {
+                data: null,
+                error: {
+                  code: "P0001",
+                  message:
+                    "Otra persona modificó esta materia. Recarga la ficha antes de guardar.",
+                },
+              };
+      } else {
+        const inserted = await supabase
+          .from("asignaturas")
+          .insert(data)
+          .select("id")
+          .single();
+        result = inserted.error
+          ? { data: null, error: inserted.error }
+          : { data: inserted.data.id, error: null };
+      }
     } else if (section === "vinculos") {
       result = await supabase.rpc("vincular_tutor_academico", {
         p_estudiante: values.estudiante_id,
@@ -161,11 +200,13 @@ export async function saveRecord(
     );
   }
   revalidatePath("/panel", "layout");
-  const target =
-    section === "vinculos"
-      ? `/panel/gestion/estudiantes?id=${values.estudiante_id}`
-      : `/panel/gestion/${section}?id=${result.data}`;
-  redirect(`${target}&guardado=1`);
+  // Tras guardar se vuelve a la lista de la sección. Los vínculos con tutores
+  // se editan dentro de la ficha del estudiante, así que se regresa a ella.
+  if (section === "vinculos")
+    redirect(
+      `/panel/gestion/estudiantes?id=${values.estudiante_id}&guardado=1`,
+    );
+  redirect(`/panel/gestion/${section}?guardado=1&registro=${result.data}`);
 }
 
 export async function findOptions(kind: OptionKind, query: string) {
