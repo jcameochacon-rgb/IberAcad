@@ -1,7 +1,7 @@
 # IberAcad 0.12.1 — Registro sin invitación
 
 Esta actualización corrige el bloqueo de registro cuando NEXT_PUBLIC_SITE_URL apunta a localhost. La ficha académica y la cuenta de acceso son pasos independientes.
-
+ 
 ## Instalar
 
 1. Conserva una copia de tu carpeta actual y de `apps/web/.env.local`.
