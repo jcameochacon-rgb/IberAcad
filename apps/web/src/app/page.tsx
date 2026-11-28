@@ -1,0 +1,67 @@
+import { ScrollExperience } from "@/components/scroll-experience";
+import Link from "next/link";
+import Image from "next/image";
+import { PublicNav } from "@/components/public-nav";
+import { ScrollCampus } from "@/components/scroll-campus";
+export default function Home() {
+  return (
+    <>
+      <PublicNav />
+      <main>
+        <ScrollExperience
+          scene="inicio"
+          title="El futuro se construye en comunidad"
+        />
+        <ScrollCampus />
+        <section className="home-story">
+          <p className="eyebrow">UNIDAD EDUCATIVA IBERDROLA A</p>
+          <h2>
+            Un lugar para crecer.
+            <br />
+            Una comunidad para acompañarte.
+          </h2>
+          <p>
+            Conoce nuestros espacios, nuestra trayectoria y la vida que
+            compartimos cada día en El Alto.
+          </p>
+          <Image
+            src="/colegio/colegio2.jpg"
+            alt="Comunidad educativa reunida en el patio del colegio"
+            width={1200}
+            height={800}
+            className="story-photo"
+          />
+        </section>
+        <section className="home-tiles">
+          {[
+            [
+              "/vida-escolar",
+              "Vida escolar",
+              "Momentos que nos unen.",
+              "colegio3.jpg",
+            ],
+            [
+              "/trayectoria",
+              "Nuestra trayectoria",
+              "Una historia que seguimos construyendo.",
+              "edificio.jpg",
+            ],
+          ].map(([url, title, body, img]) => (
+            <Link key={url} href={url} className="home-tile">
+              <Image
+                src={`/colegio/${img}`}
+                width={700}
+                height={500}
+                alt={title}
+              />
+              <div>
+                <p>{title}</p>
+                <h2>{body}</h2>
+              </div>
+            </Link>
+          ))}
+        </section>
+      </main>
+    </>
+  );
+}

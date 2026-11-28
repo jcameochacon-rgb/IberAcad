@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IberAcad · El futuro empieza aquí</title>
+<style>
+:root{color-scheme:dark;--t:#fff}
+*{margin:0;box-sizing:border-box}
+body{background:#070a24;color:var(--t);font-family:Georgia,'Times New Roman',serif}
+#track{height:600vh}
+#stage{position:sticky;top:0;height:100vh;overflow:hidden}
+svg{width:100%;height:100%;display:block}
+.cap{position:absolute;left:6vw;bottom:9vh;max-width:min(520px,88vw);opacity:0;transform:translateY(20px);transition:none;text-shadow:0 2px 14px #000b}
+.cap small{letter-spacing:.3em;text-transform:uppercase;font:600 12px system-ui,sans-serif;color:#ffd15c}
+.cap h2{font-size:clamp(28px,5vw,56px);line-height:1.05;margin:6px 0 8px}
+.cap p{font:17px/1.45 system-ui,sans-serif;opacity:.92}
+#top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);left:6vw;right:6vw;display:flex;justify-content:space-between;font:600 13px system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;text-shadow:0 1px 8px #000a}
+#bar{position:absolute;left:0;bottom:0;height:5px;width:0;background:linear-gradient(90deg,#d52b1e,#f9e300,#007934)}
+#hint{position:absolute;right:6vw;bottom:9vh;font:13px system-ui,sans-serif;letter-spacing:.15em;text-transform:uppercase;animation:b 1.6s infinite}
+@keyframes b{50%{transform:translateY(8px)}}
+</style><style>html,body{overflow:hidden!important}#track{height:100vh!important}.cap{pointer-events:none}#hint{display:none!important}</style><style>body{font-family:Arial,Helvetica,sans-serif}.cap{z-index:2;bottom:100px}.cap h2{font-family:Arial,Helvetica,sans-serif;letter-spacing:-.045em;font-weight:700}.cap small{color:#bfdbfe}#top,#bar{z-index:2}#stage:after{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(transparent,rgba(4,18,45,.8));pointer-events:none}@media(max-width:600px){#top{font-size:10px;letter-spacing:.12em;gap:24px}.cap{bottom:105px}.cap p{font-size:15px;line-height:1.55}.cap h2{font-size:30px;line-height:1.08}}</style><style>svg{filter:saturate(.84)}#bar{background:linear-gradient(90deg,#38bdf8,#5eead4)}.cap{box-shadow:0 15px 40px #10274624}.cap h2{letter-spacing:-.04em}</style></head><body>
+<div id="track"><div id="stage">
+<svg id="s" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop id="c1" offset="0"/><stop id="c2" offset="1"/></linearGradient>
+<linearGradient id="snow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#bcd3ee"/></linearGradient></defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<g id="stars"></g>
+<circle id="sun" r="70" fill="#ffd15c"/><circle id="moon" r="48" fill="#f4f1de"/>
+<g id="clouds" fill="#fff" opacity=".85"></g>
+<g id="mtn"><polygon points="-200,640 200,470 380,340 470,270 520,235 600,300 700,365 830,330 1000,470 1250,580 1800,640 1800,900 -200,900" fill="#5a4f8a"/>
+<polygon points="470,270 520,235 600,300 560,290 530,330 500,300 480,320" fill="url(#snow)"/>
+<polygon points="380,340 470,270 440,330 410,310" fill="url(#snow)"/></g>
+<g id="city"></g><g id="win" fill="#ffd96b"></g>
+<g id="cable"><line x1="-50" y1="330" x2="1650" y2="560" stroke="#222" stroke-width="3"/>
+<g id="cabs"></g></g>
+<g id="fg"></g>
+<g id="flag"></g>
+<g id="condor" fill="#0b0b12"><path d="M-70,0 Q-35,-38 0,-12 Q35,-38 70,0 Q35,-12 0,12 Q-35,-12 -70,0Z"/><circle cx="0" cy="-4" r="6" fill="#fff"/></g>
+</svg>
+<div id="top"><span>El Alto · La Paz</span><span>IberAcad · Comunidad educativa</span></div>
+<div class="cap" data-a="0" data-b=".17"><small>Amanecer</small><h2>El futuro empieza aquí</h2><p>Iberdrola A: estudiantes, familias y docentes construyendo comunidad.</p></div>
+<div class="cap" data-a=".19" data-b=".38"><small>Guardián</small><h2>Más cerca. Más posibilidades.</h2><p>Desde El Alto, acompañamos cada paso del aprendizaje.</p></div>
+<div class="cap" data-a=".4" data-b=".58"><small>Movimiento</small><h2>Una comunidad conectada</h2><p>IberAcad reúne tus horarios, asistencia y calificaciones en un mismo lugar.</p></div>
+<div class="cap" data-a=".6" data-b=".78"><small>Identidad</small><h2>Nuestra identidad nos une</h2><p>Estudio, patria y libertad. Aprendemos con orgullo de nuestra comunidad.</p></div>
+<div class="cap" data-a=".8" data-b="1.1"><small>Noche</small><h2>El siguiente capítulo</h2><p>Empieza aquí. Descubre nuestra escuela y accede a tu espacio académico.</p></div>
+<div id="hint">Desliza ↓</div><div id="bar"></div>
+</div></div>
+<script>
+const $=id=>document.getElementById(id),N='http://www.w3.org/2000/svg';
+let seed=7;const R=()=>(seed=(seed*16807)%2147483647)/2147483647;
+function E(t,a,p){const e=document.createElementNS(N,t);for(const k in a)e.setAttribute(k,a[k]);(p||{appendChild(){}}).appendChild(e);return e}
+// estrellas y nubes
+for(let i=0;i<90;i++)E('circle',{cx:R()*1600,cy:R()*450,r:R()*1.8+.5,fill:'#fff'},$('stars'));
+for(let i=0;i<6;i++){const g=E('g',{transform:`translate(${i*320-100},${90+R()*160})`},$('clouds'));[0,40,85].forEach((x,j)=>E('ellipse',{cx:x,cy:j==1?-10:0,rx:50+j*8,ry:24},g))}
+// ciudad lejana
+const cols=['#6b4a7a','#7d5560','#5f4b8b','#8a5a6e'];
+for(let x=-100;x<1800;x+=34){const h=40+R()*130,y=720-h,w=28+R()*10;E('rect',{x,y,width:w,height:h,fill:cols[(R()*4)|0]},$('city'));
+for(let wy=y+8;wy<715;wy+=16)for(let wx=x+5;wx<x+w-6;wx+=10)if(R()>.45)E('rect',{x:wx,y:wy,width:4,height:6},$('win'))}
+E('rect',{x:-200,y:715,width:2000,height:200,fill:'#2a1f3d'},$('city'));
+// cabinas
+const cc=['#d52b1e','#f9e300','#007934'],cabs=cc.map(c=>{const g=E('g',{},$('cabs'));E('line',{x1:0,y1:0,x2:0,y2:26,stroke:'#222','stroke-width':3},g);E('rect',{x:-24,y:26,width:48,height:34,rx:6,fill:c,stroke:'#111','stroke-width':2},g);E('rect',{x:-16,y:32,width:32,height:14,rx:3,fill:'#bfe9ff'},g);return g});
+// cholets
+const pal=[['#d52b1e','#f9e300'],['#007934','#ffb300'],['#6a2c91','#ff7ac6'],['#0b6fa4','#ffd15c'],['#e8590c','#2fb36a']];
+for(let x=-250,i=0;x<2000;x+=190+R()*60,i++){const w=150+R()*50,h=190+R()*140,[a,b]=pal[i%5],y=900-h,g=E('g',{},$('fg'));
+E('rect',{x,y,width:w,height:h+40,fill:a},g);
+E('polygon',{points:`${x-8},${y} ${x+w+8},${y} ${x+w-20},${y-48} ${x+20},${y-48}`,fill:b},g);
+for(let k=0;k<w/22;k++)E('polygon',{points:`${x+11+k*22},${y+8} ${x+22+k*22},${y+22} ${x+11+k*22},${y+36} ${x+k*22},${y+22}`,fill:b},g);
+for(let wy=y+60;wy<880;wy+=62)for(let wx=x+18;wx<x+w-30;wx+=46){E('rect',{x:wx,y:wy,width:30,height:40,rx:3,fill:'#8fd3ff',stroke:b,'stroke-width':3},g)}}
+// wiphala
+const fl=$('flag'),W=['#d52b1e','#e8590c','#f9e300','#fff','#2fb36a','#1d4ed8','#7a2fa3'];
+E('rect',{x:1380,y:430,width:7,height:470,fill:'#ddd'},fl);
+const fg=E('g',{},fl);for(let r=0;r<7;r++)for(let c=0;c<7;c++)E('rect',{x:1387+c*18,y:436+r*18,width:18,height:18,fill:W[(c+r)%7]},fg);
+const sm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)};
+const K=[[0,'#2b2d5e','#f59e6b'],[.22,'#3f8fe0','#bfe3ff'],[.55,'#3a8ae0','#d8efff'],[.78,'#5b3a8c','#ff7a45'],[1,'#070a24','#1b2a6b']];
+const hex=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16));
+function sky(p,k){let i=0;while(i<K.length-2&&p>K[i+1][0])i++;const t=sm(K[i][0],K[i+1][0],p),a=hex(K[i][k]),b=hex(K[i+1][k]);return 'rgb('+a.map((v,j)=>Math.round(v+(b[j]-v)*t)).join()+')'}
+const caps=[...document.querySelectorAll('.cap')],trk=$('track');
+function draw(){
+const p=window.__progress || 0;
+$('c1').setAttribute('stop-color',sky(p,1));$('c2').setAttribute('stop-color',sky(p,2));
+const night=Math.max(sm(.72,.95,p),1-sm(0,.12,p)),ph=Math.min(1,p/.85);
+$('stars').style.opacity=night;$('win').style.opacity=night;
+$('sun').setAttribute('transform',`translate(${120+1360*ph},${760-560*Math.sin(Math.PI*ph)})`);
+$('sun').style.opacity=1-sm(.85,.95,p);
+$('moon').setAttribute('transform',`translate(${1300-300*sm(.7,1,p)},${420-170*sm(.7,1,p)})`);$('moon').style.opacity=sm(.75,.95,p);
+$('clouds').setAttribute('transform',`translate(${-p*500},0)`);$('clouds').style.opacity=.85*(1-night*.8);
+$('mtn').setAttribute('transform',`translate(${-p*80},${-p*20})`);
+$('city').setAttribute('transform',`translate(${-p*140},0)`);$('win').setAttribute('transform',`translate(${-p*140},0)`);
+$('cable').setAttribute('transform',`translate(0,${-p*10})`);
+cabs.forEach((g,i)=>{const t=((p*1.6+i/3)%1+1)%1;g.setAttribute('transform',`translate(${-50+1700*t},${330+230*t})`)});
+$('fg').setAttribute('transform',`translate(${-p*260},${60-p*60})`);
+$('fg').style.filter=`brightness(${1-night*.45})`;
+$('flag').setAttribute('transform',`translate(${-p*260+ -150},0)`);
+fg.setAttribute('transform',`skewY(${Math.sin(p*70)*5}) translate(0,${Math.sin(p*70)*-4})`);
+const cx=-120+1900*p,cy=180+70*Math.sin(p*11);
+$('condor').setAttribute('transform',`translate(${cx},${cy}) scale(${1.6},${1.6*(.6+.4*Math.cos(p*90))}) rotate(${Math.cos(p*11)*6})`);
+$('condor').style.opacity=1-night*.4;
+caps.forEach(c=>{const a=+c.dataset.a,b=+c.dataset.b,o=Math.min(sm(a,a+.03,p),1-sm(b-.03,b,p));c.style.opacity=o;c.style.transform=`translateY(${(1-o)*24}px)`});
+$('bar').style.width=p*100+'%';$('hint').style.opacity=1-sm(0,.05,p);
+}
+addEventListener('message',e=>{if(e.source!==parent || e.data?.type!=='iberacad.scene')return;window.__progress=Math.min(1,Math.max(0,Number(e.data.progress)||0));requestAnimationFrame(draw)});addEventListener('resize',draw);draw();
+</script></body></html>

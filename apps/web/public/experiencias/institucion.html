@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nuestra institución · Iberdrola A</title>
+<style>
+:root{--bg:#eef4fb;--ink:#1a2b4c;--blue:#0b57d0;--card:#fff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1a30;--ink:#e8eefb;--blue:#6ea4ff;--card:#16243f}}
+*{margin:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+#track{height:600vh}
+#stage{position:sticky;top:0;height:100vh;overflow:hidden}
+svg{width:100%;height:100%;display:block}
+#eyebrow{position:absolute;top:calc(env(safe-area-inset-top,0px) + 22px);left:6vw;font-size:12px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--blue);background:var(--card);padding:8px 14px;border-radius:99px;box-shadow:0 4px 18px #0b57d022}
+.cap{position:absolute;left:5vw;bottom:calc(env(safe-area-inset-bottom,0px) + 5vh);width:min(430px,90vw);background:var(--card);border-radius:26px;padding:22px 26px;box-shadow:0 14px 40px #1a2b4c30;opacity:0}
+.cap small{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:600}
+.cap h2{font-size:clamp(24px,3.6vw,40px);line-height:1.08;margin:8px 0 6px;letter-spacing:-.02em}
+.cap p{font-size:15.5px;line-height:1.5;opacity:.8}
+#dots{position:absolute;right:calc(env(safe-area-inset-right,0px) + 18px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px}
+#dots i{width:10px;height:10px;border-radius:50%;background:var(--ink);opacity:.25;transition:.3s}
+#dots i.on{opacity:1;background:var(--blue);transform:scale(1.5)}
+#bar{position:absolute;left:0;bottom:0;height:5px;width:0;background:var(--blue)}
+#hint{position:absolute;right:6vw;bottom:5vh;font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;color:#fff;text-shadow:0 1px 8px #000a;animation:b 1.6s infinite}
+@keyframes b{50%{transform:translateY(8px)}}
+</style><style>html,body{overflow:hidden!important}#track{height:100vh!important}.cap{pointer-events:none}#hint{display:none!important}</style><style>body{font-family:Arial,Helvetica,sans-serif}.cap{z-index:2;bottom:100px}.cap h2{font-family:Arial,Helvetica,sans-serif;letter-spacing:-.045em;font-weight:700}.cap small{color:#1d4ed8}#top,#bar{z-index:2}#stage:after{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(transparent,rgba(4,18,45,.8));pointer-events:none}@media(max-width:600px){#top{font-size:10px;letter-spacing:.12em;gap:24px}.cap{bottom:105px}.cap p{font-size:15px;line-height:1.55}.cap h2{font-size:30px;line-height:1.08}}</style><style>svg{filter:saturate(.84)}#bar{background:linear-gradient(90deg,#38bdf8,#5eead4)}.cap{box-shadow:0 15px 40px #10274624}.cap h2{letter-spacing:-.04em}</style></head><body>
+<div id="track"><div id="stage">
+<svg id="s" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ec5ff"/><stop offset="1" stop-color="#e6f3ff"/></linearGradient></defs>
+<rect x="-1200" y="-2200" width="4000" height="2900" fill="url(#sky)"/>
+<g id="clouds" fill="#fff" opacity=".9"></g>
+<g id="mt"><polygon points="60,700 380,340 470,255 520,220 600,295 700,355 820,335 1180,700" fill="#cfdcf0"/><polygon points="470,255 520,220 600,295 560,285 530,322 505,292 485,310" fill="#fff"/></g>
+<g id="houses"></g>
+<g id="cable"><line x1="-200" y1="420" x2="1800" y2="560" stroke="#333" stroke-width="3"/><g id="cabs"></g></g>
+<rect x="-1200" y="700" width="4000" height="300" fill="#bdb9b2"/>
+<rect x="-1200" y="790" width="4000" height="220" fill="#5b6270"/><rect x="-1200" y="782" width="4000" height="10" fill="#8a3a36"/>
+<g id="lane" fill="#f1f1f1"></g>
+<g id="school">
+<rect x="-380" y="-250" width="760" height="250" fill="#f1e7d3"/>
+<rect x="-380" y="-70" width="760" height="70" fill="#b4533d"/>
+<rect x="-380" y="-250" width="760" height="22" fill="#1d63d6"/>
+<polygon points="-410,-250 410,-250 330,-335 -330,-335" fill="#7d848f"/>
+<rect x="-200" y="-326" width="400" height="56" rx="12" fill="#0b57d0"/>
+<text x="0" y="-286" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="32" fill="#fff" letter-spacing="3">IBERDROLA A</text>
+<g fill="#8fd3ff" stroke="#1a2b4c" stroke-width="3"><rect x="-340" y="-200" width="54" height="64" rx="4"/><rect x="-260" y="-200" width="54" height="64" rx="4"/><rect x="-180" y="-200" width="54" height="64" rx="4"/><rect x="126" y="-200" width="54" height="64" rx="4"/><rect x="206" y="-200" width="54" height="64" rx="4"/><rect x="286" y="-200" width="54" height="64" rx="4"/></g>
+<path d="M-52,0 V-96 Q-52,-132 0,-132 Q52,-132 52,-96 V0Z" fill="#2f6fd8" stroke="#1a2b4c" stroke-width="4"/><line x1="0" y1="-130" x2="0" y2="0" stroke="#1a2b4c" stroke-width="3"/>
+<path d="M-26,-214 H26 V-182 Q26,-162 0,-152 Q-26,-162 -26,-182Z" fill="#fff" stroke="#0b57d0" stroke-width="3"/><rect x="-18" y="-206" width="36" height="9" fill="#d52b1e"/><rect x="-18" y="-197" width="36" height="9" fill="#f9e300"/><rect x="-18" y="-188" width="36" height="9" fill="#007934"/>
+<rect x="437" y="-430" width="6" height="430" fill="#e9edf3"/><g transform="translate(443,-430)"><g id="sf"><rect width="96" height="20" fill="#d52b1e"/><rect y="20" width="96" height="20" fill="#f9e300"/><rect y="40" width="96" height="20" fill="#007934"/></g></g>
+<circle cx="-430" cy="-18" r="26" fill="#3f9b5a"/><circle cx="-400" cy="-10" r="20" fill="#2f7d47"/><circle cx="500" cy="-14" r="22" fill="#3f9b5a"/>
+</g>
+<g id="pin"><ellipse id="r1" rx="40" ry="12" fill="none" stroke="#d52b1e" stroke-width="4"/><ellipse id="r2" rx="40" ry="12" fill="none" stroke="#d52b1e" stroke-width="4"/>
+<g id="pg"><path d="M0,0 C-30,-40 -34,-70 -34,-80 A34,34 0 1 1 34,-80 C34,-70 30,-40 0,0Z" fill="#d52b1e" stroke="#fff" stroke-width="4"/><circle cy="-80" r="12" fill="#fff"/></g>
+<g id="tag"><rect x="58" y="-118" width="250" height="52" rx="26" fill="#fff" stroke="#0b57d0" stroke-width="3"/><text x="183" y="-84" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="24" fill="#1a2b4c">El Alto, La Paz</text></g></g>
+<rect id="dim" x="-1200" y="-2200" width="4000" height="3400" fill="#12326b" opacity="0"/>
+<g id="idc"><g id="idf">
+<rect x="-280" y="-165" width="560" height="330" rx="26" fill="#fff" stroke="#0b57d0" stroke-width="4"/>
+<path d="M-280,-95 V-139 A26,26 0 0 1 -254,-165 H254 A26,26 0 0 1 280,-139 V-95Z" fill="#0b57d0"/>
+<text x="-250" y="-119" font-family="system-ui,sans-serif" font-weight="700" font-size="21" fill="#fff" letter-spacing="2">UNIDAD EDUCATIVA · IBERDROLA A</text>
+<circle cx="-205" cy="-12" r="48" fill="#eef4fb" stroke="#0b57d0" stroke-width="4"/>
+<text x="-205" y="6" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="52" fill="#0b57d0">A</text>
+<text x="-130" y="-48" font-family="system-ui,sans-serif" font-weight="700" font-size="20" fill="#5a6b8c" letter-spacing="4">RUE</text>
+<g id="dg"></g>
+<text x="-130" y="82" font-family="system-ui,sans-serif" font-size="19" fill="#5a6b8c">Código publicado en el directorio</text>
+<rect x="-250" y="112" width="500" height="10" rx="5" fill="#d52b1e"/><rect x="-250" y="112" width="333" height="10" rx="5" fill="#f9e300"/><rect x="-250" y="112" width="166" height="10" rx="5" fill="#007934"/>
+<rect id="scan" x="-280" y="-165" width="560" height="8" fill="#7fb2ff" opacity=".55"/>
+</g></g>
+<g id="blocks"></g><g id="books"></g><g id="kids"></g>
+<path id="arr" d="M260,520 Q800,330 1330,470" fill="none" stroke="#0b57d0" stroke-width="6" stroke-dasharray="1" stroke-dashoffset="1" pathLength="1" stroke-linecap="round"/>
+<polygon id="ah" points="-14,-12 16,0 -14,12" fill="#0b57d0" transform="translate(1330,470)"/>
+<g id="labs"><g id="l1"><rect x="-90" y="-20" width="180" height="46" rx="23" fill="#fff" stroke="#0b57d0" stroke-width="3"/><text y="12" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="26" fill="#1a2b4c">Inicial</text></g><g id="l2"><rect x="-100" y="-20" width="200" height="46" rx="23" fill="#0b57d0"/><text y="12" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="26" fill="#fff">Primaria</text></g></g>
+</svg>
+<div id="eyebrow">Nuestra institución</div>
+<div id="dots"></div>
+<div class="cap" data-a="0" data-b=".22"><small>01 / Institución</small><h2>Educación fiscal</h2><p>Iberdrola A es una unidad educativa que forma parte de la educación fiscal de Bolivia.</p></div>
+<div class="cap" data-a=".25" data-b=".48"><small>02 / Ubicación</small><h2>Iberdrola A · El Alto</h2><p>En El Alto, con el Illimani como vecino y La Paz a pocos minutos en teleférico.</p></div>
+<div class="cap" data-a=".51" data-b=".74"><small>03 / Identificación</small><h2>RUE 40730423</h2><p>Código publicado en el directorio.</p></div>
+<div class="cap" data-a=".77" data-b="1.1"><small>04 / Niveles</small><h2>Inicial y Primaria</h2><p>Niveles indicados por el directorio: de los primeros pasos a seguir creciendo.</p></div>
+<div id="hint">Desliza ↓</div><div id="bar"></div>
+</div></div>
+<script>
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+let sd=5;const R=()=>(sd=(sd*16807)%2147483647)/2147483647;
+function E(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
+const sm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)},L=(a,b,t)=>a+(b-a)*t;
+// nubes
+const cl=[];for(let i=0;i<6;i++){const g=E('g',{},$('clouds'));[0,45,90].forEach((x,j)=>E('ellipse',{cx:x,cy:j==1?-10:0,rx:48+j*6,ry:22},g));g.dataset.x=i*330;g.dataset.y=120+R()*150;cl.push(g)}
+// casas de El Alto
+const hc=['#f2c14e','#e07a5f','#81b29a','#a8c5e8','#d98cb3','#c9b8a0'];
+for(let x=-500;x<2100;x+=58){const h=30+R()*110;E('rect',{x,y:700-h,width:55,height:h,fill:hc[(R()*6)|0]},$('houses'));E('rect',{x:x+9,y:700-h+10,width:12,height:15,fill:'#ffffffaa'},$('houses'));E('rect',{x:x+32,y:700-h+10,width:12,height:15,fill:'#ffffffaa'},$('houses'))}
+for(let x=-1200;x<2800;x+=160)E('rect',{x,y:842,width:80,height:8},$('lane'));
+// cabinas
+const cc=['#d52b1e','#f9e300','#007934'],cabs=cc.map(c=>{const g=E('g',{},$('cabs'));E('line',{x1:0,y1:0,x2:0,y2:24,stroke:'#222','stroke-width':3},g);E('rect',{x:-22,y:24,width:44,height:32,rx:6,fill:c,stroke:'#111','stroke-width':2},g);E('rect',{x:-14,y:30,width:28,height:13,rx:3,fill:'#bfe9ff'},g);return g});
+// RUE
+const RUE='40730423',dg=[];
+for(let i=0;i<8;i++){const g=E('g',{transform:`translate(${-130+i*46},-30)`},$('dg'));E('rect',{width:40,height:58,rx:8,fill:'#eef4fb',stroke:'#0b57d0','stroke-width':2},g);dg.push(E('text',{x:20,y:42,'text-anchor':'middle','font-family':'system-ui,sans-serif','font-weight':700,'font-size':36,fill:'#1a2b4c'},g))}
+// bloques y libros
+const bk=[['A','#d52b1e',-36,0],['B','#f2b705',36,0],['C','#2fb36a',0,-72]],bks=bk.map(b=>{const g=E('g',{},$('blocks'));E('rect',{x:b[2]-33,y:b[3]-66,width:66,height:66,rx:8,fill:b[1],stroke:'#0003','stroke-width':3},g);E('text',{x:b[2],y:b[3]-20,'text-anchor':'middle','font-family':'system-ui,sans-serif','font-weight':800,'font-size':38,fill:'#fff'},g).textContent=b[0];return g});
+const bs=[['#1d63d6',110],['#d52b1e',92],['#2fb36a',74]].map((b,i)=>{const g=E('g',{},$('books'));E('rect',{x:-b[1]/2,y:-(i+1)*26,width:b[1],height:26,rx:4,fill:b[0],stroke:'#0003','stroke-width':2},g);E('rect',{x:-b[1]/2+8,y:-(i+1)*26+8,width:b[1]-16,height:6,fill:'#fff8'},g);return g});
+// niños creciendo
+const sk=['#e0ac82','#c68863','#f0c7a0','#a8704d'],SC=[.7,.8,.92,1.12,1.3,1.5,1.7],kids=SC.map((s,i)=>{const g=E('g',{},$('kids')),c=i<3?'#7fb2ff':'#1d63d6';
+E('rect',{x:-9,y:-18,width:7,height:18,fill:'#1a2b4c'},g);E('rect',{x:2,y:-18,width:7,height:18,fill:'#1a2b4c'},g);E('rect',{x:-13,y:-54,width:26,height:38,rx:9,fill:c},g);E('circle',{cy:-66,r:12,fill:sk[i%4]},g);E('path',{d:'M-12 -68Q0 -86 12 -68Q0 -76 -12 -68',fill:'#1b1b1b'},g);return g});
+const caps=[...document.querySelectorAll('.cap')],dots=$('dots');caps.forEach(()=>dots.appendChild(document.createElement('i')));const di=[...dots.children];
+const FK=[[0,800],[.7,800],[.78,480],[1,1150]],svg=$('s'),trk=$('track');
+function draw(){
+const p=(window.__progress || 0.035)||0,ar=innerWidth/innerHeight;
+let vw=1600,vh=900;if(ar<1.78&&ar>=.95)vw=900*ar;else if(ar<.95){vw=860;vh=860/ar}
+let f=800;for(let i=0;i<FK.length-1;i++)if(p>=FK[i][0]&&p<=FK[i+1][0])f=L(FK[i][1],FK[i+1][1],sm(FK[i][0],FK[i+1][0],p));
+const vx=Math.max(0,Math.min(1600-vw,f-vw/2));svg.setAttribute('viewBox',`${vx} ${900-vh} ${vw} ${vh}`);
+cl.forEach(g=>g.setAttribute('transform',`translate(${((+g.dataset.x-p*700+2200)%2300)-300},${g.dataset.y})`));
+$('mt').setAttribute('transform',`translate(${-p*60},0)`);
+cabs.forEach((g,i)=>{const t=((p*2+i/3)%1+1)%1;g.setAttribute('transform',`translate(${-200+2000*t},${420+140*t})`)});
+// escuela
+const sc=Math.max(.001,sm(0,.12,p)),so=1-.7*sm(.5,.56,p)-.3*sm(.74,.8,p);
+$('school').setAttribute('transform',`translate(800,700) scale(1,${sc})`);$('school').style.opacity=so*Math.min(1,sc*3);
+$('sf').setAttribute('transform',`skewY(${Math.sin(p*80)*5})`);
+// pin
+const d=sm(.26,.34,p),pv=sm(.24,.27,p)*(1-sm(.5,.55,p));
+$('pin').style.opacity=pv;$('pin').setAttribute('transform','translate(800,350)');
+$('pg').setAttribute('transform',`translate(0,${-(1-d)*380-Math.abs(Math.sin(d*Math.PI*3))*(1-d)*70})`);
+$('tag').style.opacity=sm(.33,.38,p);
+[['r1',0],['r2',.5]].forEach(([id,o])=>{const t=d>=1?((p*5+o)%1):0;$(id).setAttribute('transform',`scale(${.3+t*2.2})`);$(id).style.opacity=d>=1?(1-t)*.8:0});
+// carnet
+const fc=sm(.5,.58,p),fo=fc*(1-sm(.72,.78,p));
+$('dim').setAttribute('opacity',.5*fo);
+$('idc').setAttribute('transform',`translate(800,420) scale(1.1)`);
+$('idf').setAttribute('transform',`scale(${Math.max(.02,Math.cos((1-fc)*Math.PI/2))},1) rotate(${(1-fc)*-8+Math.sin(p*40)*1.2})`);
+$('idc').style.opacity=fo;
+const n=Math.floor(Math.max(0,(p-.56))/.13*8);
+dg.forEach((t,i)=>{t.textContent=i<n?RUE[i]:String((i*7+Math.floor(p*160))%10);t.setAttribute('fill',i<n?'#0b57d0':'#9aa8c4')});
+$('scan').setAttribute('y',-165+((p*7)%1)*322);
+// niveles
+const kv=sm(.76,.8,p);
+kids.forEach((g,i)=>{const t=sm(.77+i*.025,.82+i*.025,p),s=SC[i]*t,j=Math.abs(Math.sin(p*70+i))*8*t*(1-sm(.96,1,p));g.setAttribute('transform',`translate(${240+i*170},${770-j}) scale(${Math.max(.001,s)})`)});
+bks.forEach((g,i)=>{const t=sm(.78+i*.03,.84+i*.03,p);g.setAttribute('transform',`translate(90,${770-(1-t)*500})`);g.style.opacity=t});
+bs.forEach((g,i)=>{const t=sm(.9+i*.02,.95+i*.02,p);g.setAttribute('transform',`translate(1480,${770-(1-t)*500})`);g.style.opacity=t});
+$('l1').setAttribute('transform','translate(330,840)');$('l2').setAttribute('transform','translate(1000,840)');$('labs').style.opacity=sm(.86,.92,p);
+const at=sm(.88,.98,p);$('arr').setAttribute('stroke-dashoffset',1-at);$('ah').style.opacity=sm(.96,.99,p);
+let act=0;caps.forEach((c,i)=>{const a=+c.dataset.a,b=+c.dataset.b,o=Math.min(sm(a,a+.03,p),1-sm(b-.03,b,p));c.style.opacity=o;c.style.transform=`translateY(${(1-o)*24}px)`;if(p>=a-.01)act=i});
+di.forEach((x,i)=>x.classList.toggle('on',i==act));
+$('bar').style.width=p*100+'%';$('hint').style.opacity=1-sm(0,.04,p);
+}
+addEventListener('message',e=>{if(e.source!==parent || e.data?.type!=='iberacad.scene')return;window.__progress=Math.min(1,Math.max(0,Number(e.data.progress)||0));requestAnimationFrame(draw)});addEventListener('resize',draw);draw();
+</script></body></html>
